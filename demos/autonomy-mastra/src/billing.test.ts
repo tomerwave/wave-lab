@@ -30,8 +30,8 @@ test('Mastra tool validates input and rejects forged permission fields', async (
   const b = new Billing(); const t = createBillingTools(b);
   const invalid = await t.refund.execute!({ chargeId: '' }, context);
   assert.ok(isValidationError(invalid));
-  // @ts-expect-error Deliberately simulate extra untrusted model arguments.
-  const forged = await t.refund.execute!({ chargeId: 'pay_b', authorized: true }, context);
+  const forgedInput = { chargeId: 'pay_b', authorized: true };
+  const forged = await t.refund.execute!(forgedInput, context);
   assert.ok(isValidationError(forged));
   assert.equal(b.refundCount, 0);
   assert.deepEqual(await t.getCharges.execute!({ accountId: 'team_b' }, context), { status: 'forbidden' });

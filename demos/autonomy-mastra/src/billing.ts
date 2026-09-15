@@ -1,7 +1,6 @@
 export type Charge = { id: string; accountId: string; amount: number; duplicate: boolean };
 export type Result = { status: string; receiptId?: string; amount?: number };
 
-// Server-owned session and fictional data. Never accept permissions from the model.
 export class Billing {
   private readonly accounts: Set<string>;
   private readonly charges: Map<string, Charge>;
@@ -22,7 +21,6 @@ export class Billing {
     if (!this.accounts.has(accountId)) return { status: 'forbidden' };
     return [...this.charges.values()].filter(c => c.accountId === accountId).map(c => ({ ...c }));
   }
-  // Intentionally broken. Local CLI only; NEVER registered as an agent tool.
   unsafeRefund(chargeId: string): Result {
     const charge = this.charges.get(chargeId);
     if (!charge) return { status: 'not_found' };
@@ -37,7 +35,6 @@ export class Billing {
     const saved = this.ledger.get(chargeId);
     if (saved) return { ...saved };
     if (!charge.duplicate || charge.amount > 20000) return { status: 'needs_review' };
-    // No await between checking and recording: atomic within this Node process.
     const receipt = { status: 'refunded_in_simulation', receiptId: `refund_${chargeId}`, amount: charge.amount };
     this.ledger.set(chargeId, receipt);
     return { ...receipt };

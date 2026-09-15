@@ -61,7 +61,19 @@ All billing data is fictional. `investigate` is a replay, not a live model choos
 npm run check
 ```
 
-This runs type checking, seven behavior tests and the build. The tests exercise real Mastra tools and workflows. They do not evaluate a live model's decisions.
+This runs Godharness validation, Godlint policy checks, type checking, seven behavior tests and the build. The tests exercise real Mastra tools and workflows. They do not evaluate a live model's decisions.
+
+## Engineering guardrails
+
+[Godharness](https://github.com/tomerwave/godharness) supplies the project context before an agent changes code. [Godlint](https://github.com/tomerwave/godlint) checks the code afterwards. Both are pinned development dependencies installed by `npm ci`.
+
+```sh
+npm run harness:check
+npm run lint
+npm run lint:json
+```
+
+Codex and Claude Code hooks use the repository's installed Godharness. Start your coding agent from the repository root after installing dependencies. The [WaveLab standard](docs/godharness/wavelab.md) explains the demo boundaries. CI reports Godlint findings as GitHub annotations and JSON logs; errors and warnings fail the gate.
 
 ## Add an experiment
 
@@ -74,6 +86,12 @@ npm run demo --workspace=@tomerwave/<name> -- <mode>
 Keep dependencies local to the demo and commit the root lockfile. Share code when two examples actually need it.
 
 Found a surprising edge case? Open an issue with the command, input and output. That's useful material for the next talk.
+
+## Take it into your own project
+
+Try changing one rule, run the demo again, and see what breaks. If you find an interesting case, [open an issue](https://github.com/tomerwave/wave-lab/issues/new) with the input and what you expected.
+
+Working through similar decisions in your team? I help teams design and build systems like these, and teach the reasoning behind them. [Let’s talk](https://tomerwave.com/meet).
 
 Built by [Tomer Gal](https://tomerwave.com).
 

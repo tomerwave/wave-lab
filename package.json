@@ -14,7 +14,16 @@
     "test": "npm run test --workspaces --if-present",
     "typecheck": "npm run typecheck --workspaces --if-present",
     "build": "npm run build --workspaces --if-present",
-    "check": "npm run typecheck && npm test && npm run build"
+    "check": "npm run harness:check && npm run lint && npm run typecheck && npm test && npm run build",
+    "lint": "godlint check",
+    "lint:github": "godlint check --format github",
+    "lint:json": "godlint check --format json",
+    "harness:check": "godharness check && godharness doctor",
+    "harness:context": "godharness context"
   },
-  "license": "MIT"
+  "license": "MIT",
+  "devDependencies": {
+    "@godharness/cli": "0.1.8",
+    "@godlint/cli": "0.9.1"
+  }
 }

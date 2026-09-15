@@ -1,0 +1,8 @@
+version: 1
+suites:
+- recommended@1
+adapters:
+  codex: true
+  claude-code: true
+standards:
+- docs/godharness/**/*.md

@@ -1,0 +1,13 @@
+version: 1
+suites: [recommended@1]
+fail-on: warning
+rules:
+  git/branch-naming:
+    severity: error
+    allow: [main]
+  security/direct-environment-read:
+    severity: error
+    allow-in: [demos/*/src/config.ts]
+  logging/no-production-log:
+    severity: error
+    allow-in: [demos/*/src/output.ts]

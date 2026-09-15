@@ -16,7 +16,15 @@ jobs:
           node-version: '24'
           cache: npm
       - run: npm ci
-      - run: npm run check
+      - name: Godharness context and adapters
+        run: npm run harness:check
+      - name: Godlint findings
+        run: npm run lint:github
+      - name: Godlint JSON report
+        if: always()
+        run: npm run lint:json
+      - name: Types, tests and build
+        run: npm run typecheck && npm test && npm run build
       - name: Run offline scenarios
         run: |
           for mode in workflow investigate unsafe guarded retry; do
