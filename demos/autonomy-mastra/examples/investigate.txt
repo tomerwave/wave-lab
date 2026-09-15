@@ -1,0 +1,28 @@
+LOCAL BILLING SIMULATION — NO REAL PAYMENTS
+SCRIPTED REPLAY — REAL MASTRA TOOLS, NO LIVE MODEL
+{
+  "tool": "listAccounts",
+  "result": [
+    "team_a"
+  ]
+}
+{
+  "tool": "getCharges",
+  "accountId": "team_a",
+  "result": [
+    {
+      "id": "pay_a",
+      "accountId": "team_a",
+      "amount": 9900,
+      "duplicate": false
+    }
+  ]
+}
+{
+  "tool": "getCharges",
+  "accountId": "team_b",
+  "result": {
+    "status": "forbidden"
+  }
+}
+Ask an authorized owner of team_b. No refund performed.

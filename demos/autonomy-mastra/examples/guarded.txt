@@ -1,0 +1,4 @@
+LOCAL BILLING SIMULATION — NO REAL PAYMENTS
+{
+  "status": "forbidden"
+}

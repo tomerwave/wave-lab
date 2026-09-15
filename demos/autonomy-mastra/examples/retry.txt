@@ -1,0 +1,7 @@
+LOCAL BILLING SIMULATION — NO REAL PAYMENTS
+{
+  "status": "refunded_in_simulation",
+  "receiptId": "refund_pay_dup",
+  "amount": 9900
+}
+refund_count=1 (20 scheduled calls + one retry)
