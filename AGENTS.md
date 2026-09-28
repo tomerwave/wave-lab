@@ -5,3 +5,5 @@ Run `npm ci` before using repository tools. Read `docs/godharness/wavelab.md` an
 Run `npm run check` before completing a change. Do not disable lint rules or change failure thresholds to hide findings. Configuration and CLI output have named, narrow boundaries documented in godlint.yaml and the WaveLab standard.
 
 Keep fictional billing data and simulated payments. Never expose unsafeRefund to a model. Changes to the CLI must preserve the five offline examples; live model execution is optional and must not be described as verified without running it.
+
+In demos/vacation-agent, read docs/godharness/vacation-agent.md. Keep the four recorded runs in its examples folder in sync with the CLI, never let the agent click pay, and keep budget and accessibility checks in code.

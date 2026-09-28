@@ -1,0 +1,29 @@
+{
+  "name": "@tomerwave/vacation-agent",
+  "version": "1.0.0",
+  "description": "An agent books a fictional vacation: Jev chooses, our code checks and clicks, Playwright or AgentCore Browser runs the page, Strands plans.",
+  "scripts": {
+    "demo": "node --import tsx src/demo.ts",
+    "build": "tsc",
+    "typecheck": "tsc --noEmit",
+    "test": "node --import tsx --test src/*.test.ts"
+  },
+  "license": "MIT",
+  "type": "module",
+  "private": true,
+  "dependencies": {
+    "@strands-agents/sdk": "1.19.0",
+    "@typesafe-ai/sdk": "0.6.0",
+    "bedrock-agentcore": "0.4.4",
+    "playwright": "1.63.0",
+    "zod": "4.6.5"
+  },
+  "devDependencies": {
+    "@types/node": "26.5.1",
+    "tsx": "4.23.13",
+    "typescript": "7.0.2"
+  },
+  "engines": {
+    "node": ">=22.13.0"
+  }
+}

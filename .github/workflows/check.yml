@@ -30,3 +30,22 @@ jobs:
           for mode in workflow investigate unsafe guarded retry; do
             npm run demo -- "$mode"
           done
+  vacation:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: '24'
+          cache: npm
+      - run: npm ci
+      - name: Install Chromium for Playwright
+        run: npx playwright install --with-deps chromium
+      - name: Compare vacation scenarios with recorded output
+        shell: bash
+        run: |
+          for scenario in happy sold-out budget-drop; do
+            npm run -s demo:vacation -- "$scenario" | diff "demos/vacation-agent/examples/$scenario.txt" -
+          done
+          npm run -s demo:vacation -- sold-out --chooser careless | diff demos/vacation-agent/examples/careless.txt -

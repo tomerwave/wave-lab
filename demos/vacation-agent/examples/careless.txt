@@ -1,0 +1,88 @@
+FICTIONAL HOTEL SITE. NO REAL BOOKING OR PAYMENT.
+scenario: sold-out, budget 600 EUR, accessibility required
+SCRIPTED CARELESS CHOICES. NO MODEL CALL. Shows the code rejecting a valid but wrong choice.
+step 1
+state:
+  subgoal: find an accessible hotel
+  budget_eur: 600
+  nights: 3
+  page: results
+  hotels: [{ id: A, total_eur: 520, accessible: true }, { id: B, total_eur: 480, accessible: false }, { id: C, total_eur: 590, accessible: true }]
+  available_actions: [open_hotel_A, open_hotel_B, open_hotel_C, stop]
+choice: open_hotel_B (scripted)
+code: ok
+
+step 2
+state:
+  subgoal: find an accessible hotel
+  budget_eur: 600
+  nights: 3
+  page: hotel_details
+  ruled_out: { B: not_accessible }
+  hotel_B: { accessible: false, total_eur: 480 }
+  available_actions: [select_hotel, back_to_results, stop]
+choice: select_hotel (scripted)
+code: rejected by code: not_accessible
+
+step 3
+state:
+  subgoal: find an accessible hotel
+  budget_eur: 600
+  nights: 3
+  page: hotel_details
+  ruled_out: { B: not_accessible }
+  last_result: rejected select_hotel: not_accessible
+  hotel_B: { accessible: false, total_eur: 480 }
+  available_actions: [select_hotel, back_to_results, stop]
+choice: back_to_results (scripted)
+code: ok
+
+step 4
+state:
+  subgoal: find an accessible hotel
+  budget_eur: 600
+  nights: 3
+  page: results
+  ruled_out: { B: not_accessible }
+  hotels: [{ id: A, total_eur: 520, accessible: true }, { id: B, total_eur: 480, accessible: false }, { id: C, total_eur: 590, accessible: true }]
+  available_actions: [open_hotel_A, open_hotel_B, open_hotel_C, stop]
+choice: open_hotel_A (scripted)
+code: ok
+
+step 5
+state:
+  subgoal: find an accessible hotel
+  budget_eur: 600
+  nights: 3
+  page: hotel_details
+  ruled_out: { B: not_accessible, A: sold_out }
+  hotel_A: sold_out
+  available_actions: [back_to_results, stop]
+choice: back_to_results (scripted)
+code: ok
+
+step 6
+state:
+  subgoal: find an accessible hotel
+  budget_eur: 600
+  nights: 3
+  page: results
+  ruled_out: { B: not_accessible, A: sold_out }
+  hotels: [{ id: A, total_eur: 520, accessible: true }, { id: B, total_eur: 480, accessible: false }, { id: C, total_eur: 590, accessible: true }]
+  available_actions: [open_hotel_A, open_hotel_B, open_hotel_C, stop]
+choice: open_hotel_C (scripted)
+code: ok
+
+step 7
+state:
+  subgoal: find an accessible hotel
+  budget_eur: 600
+  nights: 3
+  page: hotel_details
+  ruled_out: { B: not_accessible, A: sold_out }
+  hotel_C: { accessible: true, total_eur: 590 }
+  available_actions: [select_hotel, back_to_results, stop]
+choice: select_hotel (scripted)
+code: ok
+
+outcome: found hotel C (590 EUR, accessible). Stopped before payment.

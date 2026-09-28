@@ -11,6 +11,7 @@
   },
   "scripts": {
     "demo": "npm run demo --workspace=@tomerwave/autonomy-mastra --",
+    "demo:vacation": "npm run demo --workspace=@tomerwave/vacation-agent --",
     "test": "npm run test --workspaces --if-present",
     "typecheck": "npm run typecheck --workspaces --if-present",
     "build": "npm run build --workspaces --if-present",

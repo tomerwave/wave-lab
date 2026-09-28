@@ -11,6 +11,8 @@ This is where I keep examples from my talks and experiments. Each one starts wit
 
 The first experiment: an AI assistant that can ask for a refund. The interesting part is what the tool lets it do.
 
+The second: an agent that books a fictional vacation in a real browser. The model picks one action from a list; the code decides what is on the list, checks it and clicks.
+
 ## Start here
 
 You'll need Node.js 22.13 or later. The stage demos need no API key.
@@ -29,6 +31,7 @@ npm run demo -- retry
 | Experiment | Question | Stack |
 | --- | --- | --- |
 | [Autonomy, under supervision](demos/autonomy-mastra) | What should the model decide, and what must the tool enforce? | TypeScript, Node.js, Mastra |
+| [An agent books a vacation](demos/vacation-agent) | What happens between the model's choice and the click? | TypeScript, Playwright, Jev, Strands Agents, AgentCore Browser |
 
 ### One request. Two very different outcomes.
 
@@ -44,6 +47,27 @@ Dana sees two charges and asks for a refund. We start with a known workflow, inv
 
 All billing data is fictional. `investigate` is a replay, not a live model choosing tools. The optional `live` mode uses a real Mastra Agent and needs provider credentials. See the [demo guide](demos/autonomy-mastra/README.md) for setup and limitations.
 
+### The hotel sold out. What does the agent do?
+
+Three nights, 600 EUR, accessibility required. The audience breaks the plan, and the same loop reads the page, chooses, checks and clicks again. These runs use a local Chromium and scripted choices, clearly labelled, so they need no API key.
+
+```sh
+npx playwright install chromium
+npm run demo:vacation -- happy
+npm run demo:vacation -- sold-out
+npm run demo:vacation -- budget-drop
+npm run demo:vacation -- sold-out --chooser careless
+```
+
+| Command | What you'll see |
+| --- | --- |
+| `happy` | Hotel A fits. The agent picks it and stops before payment |
+| `sold-out` | Hotel A is full. The agent goes back, skips B (not accessible) and picks C |
+| `budget-drop` | Nothing fits 500 EUR with accessibility. The agent stops and asks |
+| `sold-out --chooser careless` | A careless chooser picks B anyway. The code rejects it and the loop recovers |
+
+Add `--chooser jev`, `--browser agentcore` or `--planner strands` for the live path with TypeSafe AI and AWS. It was not run against those services here. The talk slides are in [`demos/vacation-agent/talk`](demos/vacation-agent/talk). See the [demo guide](demos/vacation-agent/README.md).
+
 ## Find your way around
 
 | Path | What's inside |
@@ -53,6 +77,10 @@ All billing data is fictional. `investigate` is a replay, not a live model choos
 | `demos/autonomy-mastra/src/tools.ts` | Mastra tool definitions and input schemas |
 | `demos/autonomy-mastra/src/billing.ts` | Authorization, refund policy and repeat handling |
 | `demos/autonomy-mastra/examples/` | Recorded outputs for comparison |
+| `demos/vacation-agent/src/executor.ts` | Between the choice and the click: fresh state, then the check, then the click |
+| `demos/vacation-agent/src/jev.ts` | Asking Jev to choose one action id |
+| `demos/vacation-agent/src/planner.ts` | The Strands planner and its single tool |
+| `demos/vacation-agent/talk/` | The talk deck, as PowerPoint and PDF |
 | `assets/` | TomerWave branding |
 
 ## Check your changes
@@ -61,7 +89,7 @@ All billing data is fictional. `investigate` is a replay, not a live model choos
 npm run check
 ```
 
-This runs Godharness validation, Godlint policy checks, type checking, seven behavior tests and the build. The tests exercise real Mastra tools and workflows. They do not evaluate a live model's decisions.
+This runs Godharness validation, Godlint policy checks, type checking, 22 behavior tests and the build. The refund tests exercise real Mastra tools and workflows. The vacation tests drive the agent loop through a simulated browser, and CI also runs the vacation scenarios in a real Chromium. None of them evaluate a live model's decisions.
 
 ## Engineering guardrails
 

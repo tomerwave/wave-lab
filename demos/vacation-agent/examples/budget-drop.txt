@@ -1,0 +1,15 @@
+FICTIONAL HOTEL SITE. NO REAL BOOKING OR PAYMENT.
+scenario: budget-drop, budget 500 EUR, accessibility required
+SCRIPTED CHOICES. NO MODEL CALL.
+step 1
+state:
+  subgoal: find an accessible hotel
+  budget_eur: 500
+  nights: 3
+  page: results
+  hotels: [{ id: A, total_eur: 520, accessible: true }, { id: B, total_eur: 480, accessible: false }, { id: C, total_eur: 590, accessible: true }]
+  available_actions: [open_hotel_A, open_hotel_B, open_hotel_C, stop]
+choice: stop (scripted)
+code: stopped
+
+outcome: no hotel meets every condition. Stopped to ask the traveler.
