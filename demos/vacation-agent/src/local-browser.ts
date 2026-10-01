@@ -1,3 +1,4 @@
+import { syncWorldInPage } from './sync-world.js';
 import { chromium, type Browser, type Page } from 'playwright';
 import { selectorFor, type BrowserSession } from './browser.js';
 
@@ -10,12 +11,16 @@ export async function launchLocalBrowser(options: LocalBrowserOptions): Promise<
     executablePath: options.executablePath,
     headless: !options.headed,
     slowMo: options.slowMoMs,
+    handleSIGINT: false,
+    handleSIGTERM: false,
   });
   const page: Page = await browser.newPage();
   page.setDefaultTimeout(TIMEOUT_MS);
   return {
     open: html => page.setContent(html),
+    openUrl: async url => { await page.goto(url, { waitUntil: 'load', timeout: 30_000 }); },
     click: testId => page.click(selectorFor(testId)),
+    syncWorld: hotels => page.evaluate(syncWorldInPage, [...hotels]),
     html: () => page.content(),
     close: () => browser.close(),
   };

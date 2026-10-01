@@ -6,7 +6,8 @@
     "demo": "node --import tsx src/demo.ts",
     "build": "tsc",
     "typecheck": "tsc --noEmit",
-    "test": "node --import tsx --test src/*.test.ts"
+    "test": "node --import tsx --test src/*.test.ts",
+    "build:site": "node --import tsx scripts/build-site.mjs"
   },
   "license": "MIT",
   "type": "module",

@@ -1,3 +1,5 @@
+import { PresenterSession } from './session.js';
+import { startPresenterInput } from './cli-controls.js';
 import { parseArgs } from 'node:util';
 import { TypeSafeClient } from '@typesafe-ai/sdk';
 import { createAgentCoreBrowser } from './agentcore-browser.js';
@@ -16,10 +18,10 @@ import { formatOutcome, formatStep } from './trace.js';
 const CHOOSERS = ['scripted', 'careless', 'jev'];
 const BROWSERS = ['local', 'agentcore'];
 const PLANNERS = ['none', 'strands'];
-const USAGE = `Usage: npm run demo:vacation -- <${SCENARIO_NAMES.join('|')}> [--chooser ${CHOOSERS.join('|')}] [--browser ${BROWSERS.join('|')}] [--planner ${PLANNERS.join('|')}]`;
+const USAGE = `Usage: npm run demo:vacation -- <${SCENARIO_NAMES.join('|')}> [--chooser ${CHOOSERS.join('|')}] [--browser ${BROWSERS.join('|')}] [--planner ${PLANNERS.join('|')}] [--interactive] [--site-url URL]`;
 const PLANNER_TIMEOUT_MS = 180_000;
 
-type Options = { scenario: Scenario; chooser: string; browser: string; planner: string };
+type Options = { scenario: Scenario; chooser: string; browser: string; planner: string; interactive: boolean; siteUrl?: string };
 type OpenedBrowser = { browser: BrowserSession; start?: () => Promise<string> };
 
 function parseOptions(): Options {
@@ -29,12 +31,14 @@ function parseOptions(): Options {
       chooser: { type: 'string', default: 'scripted' },
       browser: { type: 'string', default: 'local' },
       planner: { type: 'string', default: 'none' },
+      interactive: { type: 'boolean', default: false },
+      'site-url': { type: 'string' },
     },
   });
   const name = positionals[0] ?? 'sold-out';
   const valid = isScenarioName(name) && CHOOSERS.includes(values.chooser) && BROWSERS.includes(values.browser) && PLANNERS.includes(values.planner);
   if (!valid) throw new Error(USAGE);
-  return { scenario: createScenario(name), chooser: values.chooser, browser: values.browser, planner: values.planner };
+  return { scenario: createScenario(name), chooser: values.chooser, browser: values.browser, planner: values.planner, interactive: values.interactive, siteUrl: values['site-url'] };
 }
 
 function createChooser(kind: string): Chooser {
@@ -58,7 +62,7 @@ async function openBrowser(kind: string): Promise<OpenedBrowser> {
   return { browser: session, start: () => session.start() };
 }
 
-async function runPlanner(options: Options, run: () => Promise<Outcome>): Promise<void> {
+async function runPlanner(options: Options, run: () => Promise<Outcome>, stopSignal?: AbortSignal): Promise<void> {
   const aws = loadAwsConfig();
   writeLine(`STRANDS PLANNER on Amazon Bedrock (${aws.plannerModelId}).`);
   let failure: unknown;
@@ -71,20 +75,38 @@ async function runPlanner(options: Options, run: () => Promise<Outcome>): Promis
     }
   };
   const planner = createPlanner({ region: aws.region, modelId: aws.plannerModelId, goal: options.scenario.goal, findHotel: guarded });
-  const result = await planner.invoke('Find a hotel for this trip.', { cancelSignal: AbortSignal.timeout(PLANNER_TIMEOUT_MS) });
+  const timeout = AbortSignal.timeout(PLANNER_TIMEOUT_MS);
+  const cancelSignal = stopSignal ? AbortSignal.any([timeout, stopSignal]) : timeout;
+  const result = await planner.invoke('Find a hotel for this trip.', { cancelSignal });
   writeLine(`planner: ${result.toString()}`);
   if (failure) throw failure;
 }
 
-async function runSearch(options: Options, opened: OpenedBrowser, chooser: Chooser): Promise<void> {
-  if (opened.start) writeLine(`live view: ${await opened.start()}`);
+async function runSession(options: Options, opened: OpenedBrowser, chooser: Chooser, requestReset: () => void): Promise<void> {
+  const mode = `${options.chooser === 'jev' ? 'live Jev' : options.chooser} / ${options.browser} browser / ${options.planner} planner`;
+  const presenter = options.interactive ? new PresenterSession(options.scenario, mode) : undefined;
+  const input = startPresenterInput(presenter, () => { requestReset(); presenter?.stop(); });
   const run = async () => {
-    const outcome = await findHotel({ browser: opened.browser, chooser, scenario: options.scenario, onStep: event => formatStep(event).forEach(writeLine) });
+    const outcome = await findHotel({ browser: opened.browser, chooser, scenario: options.scenario, siteUrl: options.siteUrl, presenter, maxSteps: presenter ? 50 : undefined, onStep: event => formatStep(event).forEach(writeLine) });
     writeLine(formatOutcome(outcome));
     return outcome;
   };
-  if (options.planner === 'strands') await runPlanner(options, run);
-  else await run();
+  try {
+    if (options.planner === 'strands') await runPlanner(options, run, presenter?.signal);
+    else await run();
+  } finally { input?.close(); }
+}
+
+async function attemptSearch(options: Options, opened: OpenedBrowser, chooser: Chooser): Promise<boolean> {
+  let restart = false;
+  try { await runSession(options, opened, chooser, () => { restart = true; }); }
+  catch (error) { if (!restart) throw error; }
+  return restart;
+}
+async function runSearch(options: Options, opened: OpenedBrowser, chooser: Chooser): Promise<void> {
+  if (options.siteUrl) writeLine(`website: ${options.siteUrl}`);
+  if (opened.start) writeLine(`live view: ${await opened.start()}`);
+  while (await attemptSearch(options, opened, chooser)) chooser = createChooser(options.chooser);
 }
 
 async function main(): Promise<void> {

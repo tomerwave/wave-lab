@@ -1,0 +1,9 @@
+FICTIONAL HOTEL SITE. NO REAL BOOKING OR PAYMENT.
+scenario: happy, budget 600 EUR, accessibility required
+SCRIPTED CHOICES. NO MODEL CALL.
+website: https://vacation-agent-rehearsal.vercel.app
+run 1c7dff4f-30bb-4a46-a0fa-c6ca6977eac6: scripted / local browser / none planner. Paused before the first choice.
+Commands: next | run | pause | stop | reset | sold-out [hotel id] | restore-hotel [hotel id] | budget 500 | budget 600 | help. Default hotel: A. Mutations apply at the next checkpoint; next releases one checkpoint. Reset starts a new run in this browser.
+presenter: paused, before_choice, choice none, world revision 0
+presenter: stopped, before_choice, choice none, world revision 0
+outcome: the agent stopped before finding a hotel. Stopped to ask the traveler.

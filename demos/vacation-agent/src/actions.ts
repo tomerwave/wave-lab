@@ -26,5 +26,6 @@ function detailActions(state: PageState): ActionOption[] {
 export function availableActions(state: PageState): ActionOption[] {
   if (state.page === 'results') return [...resultActions(state), STOP];
   if (state.page === 'hotel_details') return [...detailActions(state), STOP];
+  if (state.page === 'checkout') return [{ id: 'back_to_results', description: 'Return to results to recheck conditions' }, STOP];
   return [STOP];
 }

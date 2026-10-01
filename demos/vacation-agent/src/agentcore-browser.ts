@@ -1,3 +1,4 @@
+import { syncWorldInPage } from './sync-world.js';
 import { PlaywrightBrowser } from 'bedrock-agentcore/browser/playwright';
 import { selectorFor, type BrowserSession } from './browser.js';
 
@@ -13,7 +14,9 @@ export function createAgentCoreBrowser(region: string): AgentCoreSession {
   const browser = new PlaywrightBrowser({ region });
   return {
     open: html => browser.navigate({ url: toDataUrl(html), timeout: TIMEOUT_MS }),
+    openUrl: url => browser.navigate({ url, timeout: TIMEOUT_MS }),
     click: testId => browser.click({ selector: selectorFor(testId), timeout: TIMEOUT_MS }),
+    syncWorld: async hotels => { await browser.evaluate({ script: `(${syncWorldInPage.toString()})(${JSON.stringify(hotels)})` }); },
     html: () => browser.getHtml(),
     close: () => browser.stopSession(),
     async start() {

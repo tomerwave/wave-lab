@@ -26,7 +26,7 @@ function clickAction(actionId: string, testId: string): RegisteredAction {
   };
 }
 
-function selectHotel(goal: Goal): RegisteredAction {
+function selectHotel(goal: () => Goal): RegisteredAction {
   const click = clickAction('select_hotel', 'select-hotel');
   return {
     run: click.run,
@@ -34,19 +34,19 @@ function selectHotel(goal: Goal): RegisteredAction {
       const verdict = click.allowed(state);
       if (!verdict.ok) return verdict;
       if (!state.hotel) return { ok: false, reason: 'no_hotel_on_page' };
-      const found = violations(state.hotel, goal);
+      const found = violations(state.hotel, goal());
       return found.length === 0 ? OK : { ok: false, reason: found.join(',') };
     },
   };
 }
 
-function resolve(id: string, goal: Goal): RegisteredAction | undefined {
+function resolve(id: string, goal: () => Goal): RegisteredAction | undefined {
   if (id === 'back_to_results') return clickAction(id, 'back-to-results');
   if (id === 'select_hotel') return selectHotel(goal);
   const hotel = /^open_hotel_([A-Z])$/.exec(id)?.[1];
   return hotel ? clickAction(id, `open-hotel-${hotel}`) : undefined;
 }
 
-export function createRegistry(goal: Goal): Registry {
-  return { get: id => resolve(id, goal) };
+export function createRegistry(goal: Goal | (() => Goal)): Registry {
+  return { get: id => resolve(id, typeof goal === 'function' ? goal : () => goal) };
 }

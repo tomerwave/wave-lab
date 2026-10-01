@@ -1,0 +1,55 @@
+FICTIONAL HOTEL SITE. NO REAL BOOKING OR PAYMENT.
+scenario: happy, budget 600 EUR, accessibility required
+SCRIPTED CHOICES. NO MODEL CALL.
+run abab0dfa-b6d9-405d-9db6-4bcce49c8858: scripted / local browser / none planner. Paused before the first choice.
+Commands: next | run | pause | stop | reset | sold-out [hotel id] | restore-hotel [hotel id] | budget 500 | budget 600 | help. Default hotel: A. Mutations apply at the next checkpoint; next releases one checkpoint. Reset starts a new run in this browser.
+presenter: paused, before_choice, choice none, world revision 0
+presenter: stopped, before_choice, choice none, world revision 0
+outcome: the agent stopped before finding a hotel. Stopped to ask the traveler.
+SCRIPTED CHOICES. NO MODEL CALL.
+run e1fc7923-ef41-40f9-9a4b-d89b1abb057f: scripted / local browser / none planner. Paused before the first choice.
+Commands: next | run | pause | stop | reset | sold-out [hotel id] | restore-hotel [hotel id] | budget 500 | budget 600 | help. Default hotel: A. Mutations apply at the next checkpoint; next releases one checkpoint. Reset starts a new run in this browser.
+presenter: paused, before_choice, choice none, world revision 0
+presenter: stopped, before_choice, choice none, world revision 0
+outcome: the agent stopped before finding a hotel. Stopped to ask the traveler.
+SCRIPTED CHOICES. NO MODEL CALL.
+run 6b171937-7b63-422a-a93f-c1ef7709b6a9: scripted / local browser / none planner. Paused before the first choice.
+Commands: next | run | pause | stop | reset | sold-out [hotel id] | restore-hotel [hotel id] | budget 500 | budget 600 | help. Default hotel: A. Mutations apply at the next checkpoint; next releases one checkpoint. Reset starts a new run in this browser.
+presenter: paused, before_choice, choice none, world revision 0
+presenter: stopped, before_choice, choice none, world revision 0
+outcome: the agent stopped before finding a hotel. Stopped to ask the traveler.
+SCRIPTED CHOICES. NO MODEL CALL.
+run 99893a29-5324-432e-a8b4-ac0002e681fb: scripted / local browser / none planner. Paused before the first choice.
+Commands: next | run | pause | stop | reset | sold-out [hotel id] | restore-hotel [hotel id] | budget 500 | budget 600 | help. Default hotel: A. Mutations apply at the next checkpoint; next releases one checkpoint. Reset starts a new run in this browser.
+presenter: paused, before_choice, choice none, world revision 0
+presenter: running, before_choice, choice none, world revision 0
+presenter: running, before_click, choice open_hotel_A, world revision 0
+run: 99893a29-5324-432e-a8b4-ac0002e681fb, mode: scripted / local browser / none planner, world revision: 0, decision revision: 0
+step 1
+state:
+  subgoal: find an accessible hotel
+  budget_eur: 600
+  nights: 3
+  page: results
+  hotels: [{ id: A, total_eur: 520, accessible: true }, { id: B, total_eur: 480, accessible: false }, { id: C, total_eur: 590, accessible: true }]
+  available_actions: [open_hotel_A, open_hotel_B, open_hotel_C, stop]
+choice: open_hotel_A (scripted)
+code: ok
+
+presenter: running, before_choice, choice none, world revision 0
+presenter: running, before_click, choice select_hotel, world revision 0
+run: 99893a29-5324-432e-a8b4-ac0002e681fb, mode: scripted / local browser / none planner, world revision: 0, decision revision: 0
+step 2
+state:
+  subgoal: find an accessible hotel
+  budget_eur: 600
+  nights: 3
+  page: hotel_details
+  hotel_A: { accessible: true, total_eur: 520 }
+  available_actions: [select_hotel, back_to_results, stop]
+choice: select_hotel (scripted)
+code: ok
+
+presenter: running, before_choice, choice none, world revision 0
+outcome: found hotel A (520 EUR, accessible). Stopped before payment.
+presenter: stopped, before_choice, choice none, world revision 0

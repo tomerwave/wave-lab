@@ -1,0 +1,105 @@
+FICTIONAL HOTEL SITE. NO REAL BOOKING OR PAYMENT.
+scenario: happy, budget 600 EUR, accessibility required
+SCRIPTED CHOICES. NO MODEL CALL.
+run 23be9956-a1eb-4e23-aad9-fac4a5980427: scripted scripted / local browser / none planner. Paused before the first choice.
+Commands: next | run | pause | stop | sold-out [hotel id] | restore-hotel [hotel id] | budget 500 | budget 600 | help. Default hotel: A. Mutations apply at the next checkpoint; next releases one checkpoint.
+presenter: paused, before_choice, choice none, world revision 0
+presenter: running, before_choice, choice none, world revision 0
+presenter: paused, before_click, choice open_hotel_A, world revision 0
+presenter: running, before_click, choice open_hotel_A, world revision 0
+run: 23be9956-a1eb-4e23-aad9-fac4a5980427, mode: scripted scripted / local browser / none planner, world revision: 0, decision revision: 0
+step 1
+state:
+  subgoal: find an accessible hotel
+  budget_eur: 600
+  nights: 3
+  page: results
+  hotels: [{ id: A, total_eur: 520, accessible: true }, { id: B, total_eur: 480, accessible: false }, { id: C, total_eur: 590, accessible: true }]
+  available_actions: [open_hotel_A, open_hotel_B, open_hotel_C, stop]
+choice: open_hotel_A (scripted)
+code: ok
+
+presenter: paused, before_choice, choice none, world revision 0
+presenter: running, before_choice, choice none, world revision 0
+presenter: paused, before_click, choice select_hotel, world revision 0
+Budget change queued.
+presenter: paused, before_click, choice select_hotel, world revision 1
+presenter: running, before_click, choice select_hotel, world revision 1
+run: 23be9956-a1eb-4e23-aad9-fac4a5980427, mode: scripted scripted / local browser / none planner, world revision: 1, decision revision: 0
+step 2
+state:
+  subgoal: find an accessible hotel
+  budget_eur: 600
+  nights: 3
+  page: hotel_details
+  hotel_A: { accessible: true, total_eur: 520 }
+  available_actions: [select_hotel, back_to_results, stop]
+choice: select_hotel (scripted)
+code: rejected by code: world_changed
+
+presenter: running, before_choice, choice none, world revision 1
+presenter: running, before_click, choice back_to_results, world revision 1
+run: 23be9956-a1eb-4e23-aad9-fac4a5980427, mode: scripted scripted / local browser / none planner, world revision: 1, decision revision: 1
+step 3
+state:
+  subgoal: find an accessible hotel
+  budget_eur: 500
+  nights: 3
+  page: hotel_details
+  ruled_out: { A: over_budget }
+  last_result: rejected select_hotel: world_changed
+  hotel_A: { accessible: true, total_eur: 520 }
+  available_actions: [select_hotel, back_to_results, stop]
+choice: back_to_results (scripted)
+code: ok
+
+presenter: running, before_choice, choice none, world revision 1
+presenter: running, before_click, choice stop, world revision 1
+run: 23be9956-a1eb-4e23-aad9-fac4a5980427, mode: scripted scripted / local browser / none planner, world revision: 1, decision revision: 1
+step 4
+state:
+  subgoal: find an accessible hotel
+  budget_eur: 500
+  nights: 3
+  page: results
+  ruled_out: { A: over_budget }
+  hotels: [{ id: A, total_eur: 520, accessible: true }, { id: B, total_eur: 480, accessible: false }, { id: C, total_eur: 590, accessible: true }]
+  available_actions: [open_hotel_A, open_hotel_B, open_hotel_C, stop]
+choice: stop (scripted)
+code: stopped
+
+presenter: no_match, no_match, choice none, world revision 1
+Budget change queued.
+presenter: no_match, no_match, choice none, world revision 2
+presenter: running, no_match, choice none, world revision 2
+presenter: running, before_choice, choice none, world revision 2
+presenter: running, before_click, choice open_hotel_A, world revision 2
+run: 23be9956-a1eb-4e23-aad9-fac4a5980427, mode: scripted scripted / local browser / none planner, world revision: 2, decision revision: 2
+step 5
+state:
+  subgoal: find an accessible hotel
+  budget_eur: 600
+  nights: 3
+  page: results
+  hotels: [{ id: A, total_eur: 520, accessible: true }, { id: B, total_eur: 480, accessible: false }, { id: C, total_eur: 590, accessible: true }]
+  available_actions: [open_hotel_A, open_hotel_B, open_hotel_C, stop]
+choice: open_hotel_A (scripted)
+code: ok
+
+presenter: running, before_choice, choice none, world revision 2
+presenter: running, before_click, choice select_hotel, world revision 2
+run: 23be9956-a1eb-4e23-aad9-fac4a5980427, mode: scripted scripted / local browser / none planner, world revision: 2, decision revision: 2
+step 6
+state:
+  subgoal: find an accessible hotel
+  budget_eur: 600
+  nights: 3
+  page: hotel_details
+  hotel_A: { accessible: true, total_eur: 520 }
+  available_actions: [select_hotel, back_to_results, stop]
+choice: select_hotel (scripted)
+code: ok
+
+presenter: running, before_choice, choice none, world revision 2
+outcome: found hotel A (520 EUR, accessible). Stopped before payment.
+presenter: stopped, before_choice, choice none, world revision 2

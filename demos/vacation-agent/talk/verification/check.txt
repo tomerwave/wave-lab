@@ -1,0 +1,100 @@
+
+> wavelab@1.0.0 check
+> npm run harness:check && npm run lint && npm run typecheck && npm test && npm run build
+
+
+> wavelab@1.0.0 harness:check
+> godharness check && godharness doctor
+
+godharness check: 33 standards, no problems
+godharness doctor: 33 standards, adapters enabled: claude-code, codex
+
+> wavelab@1.0.0 lint
+> godlint check
+
+No findings.
+
+> wavelab@1.0.0 typecheck
+> npm run typecheck --workspaces --if-present
+
+
+> @tomerwave/autonomy-mastra@1.0.0 typecheck
+> tsc --noEmit
+
+
+> @tomerwave/vacation-agent@1.0.0 typecheck
+> tsc --noEmit
+
+
+> wavelab@1.0.0 test
+> npm run test --workspaces --if-present
+
+
+> @tomerwave/autonomy-mastra@1.0.0 test
+> node --import tsx --test src/*.test.ts
+
+✔ server authorizes, checks policy and has no side effects on rejection (0.530375ms)
+✔ unsafe and guarded demonstrate different behavior for exactly the same charge (0.053875ms)
+✔ reads do not leak another account and returned objects cannot mutate policy (0.571416ms)
+✔ Mastra tool validates input and rejects forged permission fields (1.913916ms)
+✔ 100 scheduled Mastra tool calls plus retry record one refund (0.799417ms)
+✔ real Mastra workflow succeeds and policy still blocks foreign account (2.7445ms)
+✔ Mastra agent is constructed with only the three protected tools (0.396542ms)
+ℹ tests 7
+ℹ suites 0
+ℹ pass 7
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 645.619625
+
+> @tomerwave/vacation-agent@1.0.0 test
+> node --import tsx --test src/*.test.ts
+
+✔ the results page lists three hotels and offers only actions the page allows (1.550958ms)
+✔ a sold out hotel is compacted as sold_out and cannot be selected (0.335541ms)
+✔ a valid choice that breaks a condition is rejected by code without a click (0.284167ms)
+✔ the executor reads fresh state, so a hotel that sold out after the choice is never selected (0.239625ms)
+✔ an unknown id or a hidden pay button can never be clicked (0.241583ms)
+✔ a missing or malformed price counts as a violation, not as within budget (0.258166ms)
+✔ scripted runs match the three stage scenarios and never reach payment (1.8095ms)
+✔ the sold-out run clicks exactly the path shown on the slides (0.7585ms)
+✔ a careless chooser is corrected by code and still ends at hotel C (1.128208ms)
+✔ a step limit stops a loop that makes no progress (0.624875ms)
+✔ the Jev chooser sends the page state and the offered action ids, and returns the choice (12.944791ms)
+✔ the Strands planner is built with a single find_hotel tool (1.9555ms)
+✔ the AgentCore data URL carries the same page the local browser opens (0.103208ms)
+✔ the planner tool runs the search once, even if the model calls it again (0.07625ms)
+✔ after a rejection, the next state tells the chooser what was rejected and what is ruled out (0.514375ms)
+✔ registry reads the latest budget immediately before selecting (0.103167ms)
+✔ queued availability during a choice blocks the stale select before clicking (0.656ms)
+✔ queued budget during a choice blocks the stale select before clicking (0.299542ms)
+✔ no-match recovers after restoring budget within the same browser and run (0.44375ms)
+✔ relaxed availability clears earlier exclusions and can choose A again (1.960083ms)
+✔ Stop interrupts a pending chooser and a late answer cannot click (0.331333ms)
+✔ a chooser timeout terminates without any clicks (4.322166ms)
+✔ Next and repeated world commands keep one checkpoint and revision (0.103958ms)
+✔ Stop during an asynchronous checkout read wins over a found outcome (0.74125ms)
+✔ a failed live choice is logged as interrupted without inventing a scripted decision (0.356459ms)
+✔ a supplied website URL is opened instead of silently substituting local HTML (0.385541ms)
+✔ a browser without URL support fails explicitly rather than replacing the requested site (0.057917ms)
+ℹ tests 27
+ℹ suites 0
+ℹ pass 27
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 384.041167
+
+> wavelab@1.0.0 build
+> npm run build --workspaces --if-present
+
+
+> @tomerwave/autonomy-mastra@1.0.0 build
+> tsc
+
+
+> @tomerwave/vacation-agent@1.0.0 build
+> tsc
