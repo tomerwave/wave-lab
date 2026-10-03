@@ -1,0 +1,1 @@
+Independent review: discovery/execution deadline and resolved failure handling fixed; no remaining important blocker. Native execution-abort coverage added. No paid calls in WebMCP verification. Chromium151.0.7922.34. Default DOM recorded-output comparisons: happy, sold-out, budget-drop, careless all matched.

@@ -1,14 +1,6 @@
+import { installPageActions, registerPageTools } from './site-webmcp.js';
 import type { Hotel } from './hotels.js';
 import { SITE_STYLE } from './site-style.js';
-
-const SCRIPT = `
-document.addEventListener('click', event => {
-  const button = event.target.closest('button[data-show]');
-  if (!button || button.disabled) return;
-  for (const view of document.querySelectorAll('section[data-view]')) view.hidden = view.dataset.view !== button.dataset.show;
-  window.scrollTo({top:0,behavior:'smooth'});
-});
-`;
 
 function accessibility(hotel: Hotel): string {
   return hotel.accessible ? 'נגיש' : 'לא נגיש';
@@ -58,5 +50,5 @@ export function renderCheckout(hotel: Hotel): string {
 export function renderSite(hotels: readonly Hotel[]): string {
   const views = [renderResults(hotels), ...hotels.map(renderDetails), ...hotels.map(renderCheckout)];
   return `<!doctype html><html lang="he" dir="rtl"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Somewhere · מקום לחופשה</title><style>${SITE_STYLE}</style></head>
-<body><header><div class="nav"><div class="brand" dir="ltr">somewhere<span>.</span></div><small>מקומות קטנים. חופשות גדולות.</small></div></header><main>${views.join('\n')}</main><footer><span dir="ltr">somewhere. · Photos: Unsplash</span><span>אתר הדגמה בדוי · המלונות והמחירים אינם אמיתיים · אין תשלום</span></footer><script>${SCRIPT}</script></body></html>`;
+<body><header><div class="nav"><div class="brand" dir="ltr">somewhere<span>.</span></div><small>מקומות קטנים. חופשות גדולות.</small></div></header><main>${views.join('\n')}</main><footer><span dir="ltr">somewhere. · Photos: Unsplash</span><span>אתר הדגמה בדוי · המלונות והמחירים אינם אמיתיים · אין תשלום</span></footer><script>const __name = value => value; (${installPageActions.toString()})(${registerPageTools.toString()});</script></body></html>`;
 }

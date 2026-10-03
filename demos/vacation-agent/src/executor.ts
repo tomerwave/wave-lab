@@ -18,6 +18,6 @@ export async function executeChoice(id: string, { registry, browser, validate, c
   const verdict = action.allowed(fresh);
   if (!verdict.ok) return { kind: 'replan', reason: verdict.reason, state: fresh };
 
-  await action.run(browser);
+  await action.run(browser, fresh);
   return { kind: 'done', state: await readState(browser) };
 }

@@ -58,6 +58,29 @@ HEADED=1 npm run demo:vacation -- happy --interactive --site-url https://vacatio
 
 אותו `--interactive` עובד עם דגלי המסלול החי למטה; הוא אינו מחליף Jev או AWS בבחירות מתוסרטות. השימוש החי עשוי לעלות כסף ולא נבדק מול השירותים. לחזרה ללא עלויות מודל השתמשו בברירות המחדל המתוסרטות ובדפדפן המקומי; פלטי `examples` הם גיבוי מוקלט ומסומן.
 
+## WebMCP: אותה לולאה, פעולות מובנות במקום קליקים
+
+`--interaction dom` הוא ברירת המחדל. `--interaction webmcp` משתמש ב-`document.modelContext` ובכלים `open_hotel`, `select_hotel`, `back_to_results` של האתר. תצפית עדיין נקראת מה-DOM; זו השוואה בין קליקים לבין פעולות דף מובנות, לא ראייה ממוחשבת. Jev עדיין מחזיר רק מזהה פעולה, והקוד בודק תקציב, נגישות וגרסת עולם לפני הביצוע. אין כלי תשלום או כלי מגיש.
+
+בנו את הגרסה המקומית והגישו אותה ב-localhost כפי שמוסבר למעלה. האתר הציבורי עדיין לא עודכן בכלים האלה. להרצה ללא מודל:
+
+```sh
+HEADED=1 npm run demo:vacation -- happy --interactive --interaction webmcp --site-url http://localhost:4173
+```
+
+להשוואה, הריצו אותה פקודה עם `--interaction dom`. שני המסלולים משתמשים באותן פונקציות מעבר של האתר ובאותן בדיקות מדיניות. פקודות `next`, `sold-out A`, `budget 500`, `restore-hotel A`, `budget 600`, `run` נשארות בטרמינל בלבד.
+
+נבדק native ב-Chromium 151.0.7922.34 במצב מקומי מבודד. ה-CLI מפעיל דגלי ניסוי רק בדפדפן הבדיקה, בלי לשנות את דפדפן המשתמש. בבנייה הזאת `executeTool` מקבל JSON-string; מגרסה 155 נשלח אובייקט לפי תיעוד Chrome. הגרסאות החדשות לא נבדקו כאן. נדרש HTTPS של אתר הדמו או localhost; אין WebMCP מול HTML בזיכרון/data URL. אם API, כלי, Window או origin אינם מתאימים, ההרצה נכשלת במפורש בלי להחליף לקליקים. גם discovery וביצוע מוגבלים בזמן. כרגע מצב זה דורש `--browser local`; AgentCore נשאר במסלול DOM.
+
+אם Playwright מצפה לגרסת Chromium שאינה מותקנת, קבעו `CHROMIUM_PATH` לקובץ הביצוע המותקן. ב-Mac של החזרה נבדק:
+
+```sh
+export CHROMIUM_PATH="$HOME/Library/Caches/ms-playwright/chromium-1234/chrome-mac-arm64/Google Chrome for Testing.app/Contents/MacOS/Google Chrome for Testing"
+npm run test:native --workspace=@tomerwave/vacation-agent
+```
+
+הבדיקות native הן מקומיות, ללא API keys וללא חיוב. [תיעוד Chrome](https://developer.chrome.com/docs/ai/webmcp/imperative-api).
+
 ## המסלול החי, אופציונלי
 
 כל חלק מתחלף בנפרד:

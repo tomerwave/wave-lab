@@ -1,3 +1,4 @@
+import type { Interaction } from './webmcp.js';
 import { availableActions } from './actions.js';
 import { readState, type BrowserSession } from './browser.js';
 import type { Choice, Chooser } from './chooser.js';
@@ -16,7 +17,7 @@ export type StepEvent = { step: number; state: CompactState; choice: Choice; res
 export type LoopDeps = {
   browser: BrowserSession; chooser: Chooser; scenario: Scenario; maxSteps?: number;
   presenter?: PresenterSession; choiceTimeoutMs?: number;
-  siteUrl?: string;
+  siteUrl?: string; interaction?: Interaction;
   onStep?: (event: StepEvent) => void;
 };
 type Run = { deps: LoopDeps; registry: Registry; memory: Memory; listed: HotelFacts[]; revision: number };
@@ -152,7 +153,7 @@ async function searchSteps(run: Run, maxSteps: number): Promise<Outcome> {
   return completed ?? { status: 'step_limit', steps: maxSteps };
 }
 export async function findHotel(deps: LoopDeps): Promise<Outcome> {
-  const run: Run = { deps, registry: createRegistry(() => deps.presenter?.goal() ?? deps.scenario.goal), memory: { ruledOut: {} }, listed: [], revision: -1 };
+  const run: Run = { deps, registry: createRegistry(() => deps.presenter?.goal() ?? deps.scenario.goal, deps.interaction), memory: { ruledOut: {} }, listed: [], revision: -1 };
   const maxSteps = deps.maxSteps ?? DEFAULT_MAX_STEPS;
   await openSite(deps);
   return searchSteps(run, maxSteps);

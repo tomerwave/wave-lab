@@ -1,0 +1,25 @@
+
+> @tomerwave/vacation-agent@1.0.0 test:native
+> node --import tsx --test scripts/webmcp.browser.test.ts
+
+Native browser: 151.0.7922.34
+✔ native WebMCP happy scenario (1176.265625ms)
+✔ native WebMCP sold-out scenario (814.344625ms)
+✔ native WebMCP budget-drop scenario (836.995875ms)
+✔ native WebMCP careless scenario (903.939125ms)
+✔ native stale selection, budget no-match and recovery keep one run and browser (886.851834ms)
+✔ native tools reject wrong view/hotel/tool and malformed inputs; reload re-registers (740.953875ms)
+✔ missing native API and removed tool fail explicitly without DOM fallback (681.08775ms)
+✔ ordinary buttons use the shared transitions when native API is absent (888.758791ms)
+✔ bridge rejects resolved failures and discovery timeout without changing the view (595.653292ms)
+✔ bridge rejects a tool from another Window and forbidden tool (595.188125ms)
+✔ new sessions and repeated commands retain the browser and re-register native tools (856.613959ms)
+✔ pending execution receives an abort signal and times out (541.4255ms)
+ℹ tests 12
+ℹ suites 0
+ℹ pass 12
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 9859.04275
