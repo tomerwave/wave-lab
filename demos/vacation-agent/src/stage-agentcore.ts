@@ -1,3 +1,4 @@
+import { isolatedAgentSite } from './stage-security.js';
 import { PlaywrightBrowser } from 'bedrock-agentcore/browser/playwright';
 import { toDataUrl } from './agentcore-browser.js';
 import type { StageBrowser, StageObservation } from './stage-controller.js';
@@ -18,7 +19,7 @@ export class AgentCoreStageBrowser implements StageBrowser {
     this.check(); this.starting = this.remote.startSession({ sessionName: 'vacation-stage-fictional', timeout: 1200, viewport: { width: 1920, height: 1080 } });
     try {
       await this.starting; this.check();
-      await this.remote.navigate({ url: toDataUrl(renderStageSite()), timeout: 15000 }); this.check();
+      await this.remote.navigate({ url: toDataUrl(isolatedAgentSite(renderStageSite())), timeout: 15000 }); this.check();
       return await this.remote.generateLiveViewUrl(1200);
     } finally { if (this.closed) await this.remote.stopSession(); }
   }

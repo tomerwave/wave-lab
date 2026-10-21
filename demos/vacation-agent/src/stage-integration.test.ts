@@ -15,7 +15,7 @@ test('real Jev SDK sends cumulative conversation, observed fine print and action
   const signal = new AbortController().signal;
   assert.equal(await createStageSelector(client, value => { usage = value; })({ state, page, actions: stageActions(state, page, 0), history: [] }, signal), 'inspect:harbor');
   assert.ok(body.state.conversation[0].text.includes('3,000')); assert.ok(body.state.page.offers[0].finePrint.includes('Flight and hotel'));
-  assert.ok(body.questions.nextAction.criteria['ask:budget']); assert.deepEqual([Boolean(receivedSignal), usage], [true, { model: 'test-double', inputTokens: 1, outputTokens: 1 }]);
+  assert.ok(body.questions.nextAction.criteria['inspect:harbor']); assert.equal(body.questions.nextAction.criteria['ask:budget'], undefined); assert.deepEqual([Boolean(receivedSignal), usage], [true, { model: 'test-double', inputTokens: 1, outputTokens: 1 }]);
 });
 test('site contains only the fictional page, no real checkout or presenter authority', () => {
   const html = renderStageSite(); assert.ok(html.includes('booking-review')); assert.ok(html.includes('disabled'));

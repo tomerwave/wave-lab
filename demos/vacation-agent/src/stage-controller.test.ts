@@ -73,3 +73,67 @@ test('an explicit retain or compare answer resolves the current flash-offer ques
     assert.ok(stageActions(state, page, 4).some(a => a.id === 'inspect:white'));
   }
 });
+
+test('unchanged infeasible budget stays at the explanatory human gate without another model call', async () => {
+  const c = new StageController(new TestBrowser(), async () => 'ask:budget');
+  c.state.requirements.party.adults = 2; c.state.requirements.budgetNis = 2000;
+  await c.start(); await c.pump();
+  assert.match(c.question!.text, /2430/);
+  assert.throws(() => c.answer(c.question!.id, { budgetNis: 2000 }), /2430/);
+  assert.equal(c.status, 'question'); assert.equal(c.decisions, 1);
+  c.answer(c.question!.id, { budgetNis: 3000 }); assert.equal(c.state.requirements.budgetNis, 3000); await c.stop();
+});
+test('completed unchanged inspections leave the registry and repetitive questions are bounded despite conversation revisions', async () => {
+  const c = new StageController(new TestBrowser(), async d => d.actions.find(a => a.id === 'inspect:harbor') ? 'inspect:harbor' : 'ask:constraints');
+  c.stage = 4; c.state.requirements.budgetNis = 1; await c.start(); await c.pump();
+  assert.equal(c.status, 'question'); assert.equal(c.history.filter(h => h.action === 'inspect:harbor').length, 1);
+  c.answer(c.question!.id, { text: 'המשך לבדוק' }); await c.pump();
+  c.answer(c.question!.id, { text: 'המשך לבדוק' }); await c.pump();
+  assert.equal(c.status, 'error'); assert.match(c.error!, /No progress/); await c.stop();
+});
+test('presentation delay is separately reported, adjustable, and emergency stop cancels before another model call', async () => {
+  let calls = 0; const c = new StageController(new TestBrowser(), async () => { calls++; return 'inspect:harbor'; });
+  c.setPacing(100); await c.start(); const running = c.pump(); await new Promise(resolve => setImmediate(resolve));
+  assert.equal(c.snapshot().presenting, true); assert.equal(c.snapshot().lastDecisionMs, undefined);
+  await c.stop(); await running; assert.equal(calls, 0); assert.equal(c.status, 'stopped'); assert.throws(() => c.setPacing(10001));
+});
+test('traveler can retain an infeasible budget and pause for tradeoffs without any extra model request', async () => {
+  const c = new StageController(new TestBrowser(), async () => 'ask:budget');
+  c.state.requirements.party.adults = 2; c.state.requirements.budgetNis = 2000;
+  await c.start(); await c.pump(); c.answer(c.question!.id, { choice: 'retain' }); await c.pump();
+  assert.equal(c.status, 'paused'); assert.equal(c.state.requirements.budgetNis, 2000); assert.equal(c.decisions, 1);
+  assert.deepEqual(c.state.requirements.cancellation, { flight: true, hotel: true }); await c.stop();
+});
+test('cancellation retain continues searching rather than taking the budget-only pause path', async () => {
+  const c = new StageController(new TestBrowser(), async () => 'ask:cancellation');
+  c.state.world.greatOffer = true; await c.start(); await c.pump(); c.answer(c.question!.id, { choice: 'retain' });
+  assert.equal(c.status, 'running'); assert.equal(c.state.cancellationChoice, 'retain'); await c.stop();
+});
+test('an inspection discarded by pause during selection remains available on resume', async () => {
+  let finish!: (id: string) => void; let calls = 0;
+  const c = new StageController(new TestBrowser(), async d => { calls++; assert.ok(d.actions.some(a => a.id === 'inspect:harbor')); return calls === 1 ? new Promise(resolve => { finish = resolve; }) : 'inspect:harbor'; });
+  await c.start(); const pending = c.pump(); await new Promise(resolve => setImmediate(resolve)); c.pause(); finish('inspect:harbor'); await pending;
+  assert.deepEqual([c.status, c.history.length], ['paused', 0]); c.resume(); await c.pump(); assert.equal(c.status, 'checkpoint'); await c.stop();
+});
+test('runtime Normal cancels Very slow immediately without recreating the run', { timeout: 1000 }, async () => {
+  const c = new StageController(new TestBrowser(), inspect); c.setPacing(5000); await c.start();
+  const id = c.state.id; const pending = c.pump(); await new Promise(resolve => setImmediate(resolve)); c.setPacing(0); await pending;
+  assert.equal(c.state.id, id); assert.equal(c.status, 'checkpoint'); assert.equal(c.snapshot().pacingMs, 0); await c.stop();
+});
+test('manual pause cancels presentation wait before model selection', { timeout: 1000 }, async () => {
+  const c = new StageController(new TestBrowser(), inspect); c.setPacing(5000); await c.start();
+  const pending = c.pump(); await new Promise(resolve => setImmediate(resolve)); c.pause(); await pending;
+  assert.equal(c.status, 'paused'); assert.equal(c.decisions, 0); await c.stop();
+});
+test('known viable trip does not offer redundant budget/continuation questions; actual infeasibility retains human tradeoff choices', async () => {
+  const { createStage } = await import('./stage-state.js'); const { stageActions } = await import('./stage-controller.js');
+  const state = createStage(); const page: StageObservation = { revision: 0, view: 'results', offers: offersFor(state) };
+  assert.ok(!stageActions(state, page, 0).some(a => ['ask:constraints', 'ask:budget'].includes(a.id)));
+  state.requirements.budgetNis = 1; assert.ok(stageActions(state, page, 0).some(a => a.id === 'ask:constraints'));
+});
+test('after inspecting all offers a known viable hotel remains reachable from an incompatible flash offer', async () => {
+  const choices = ['inspect:harbor', 'inspect:white', 'inspect:garden', 'inspect:flash', 'revisit:white', 'review:white'];
+  const c = new StageController(new TestBrowser(), async d => { const id = choices.shift()!; assert.ok(d.actions.some(a => a.id === id), id); return id; });
+  c.stage = 4; c.state.world.greatOffer = true; c.state.cancellationChoice = 'compare'; await c.start(); await c.pump();
+  assert.equal(c.status, 'review'); assert.ok(c.history.some(h => h.action === 'revisit:white')); await c.stop();
+});

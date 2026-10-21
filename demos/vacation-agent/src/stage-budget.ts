@@ -2,8 +2,8 @@ import { closeSync, existsSync, mkdirSync, openSync, readFileSync, renameSync, u
 import { dirname } from 'node:path';
 import type { Fetch } from '@typesafe-ai/sdk';
 type Attempt = { number: number; status: 'pending' | 'complete' | 'uncertain'; model?: string; inputTokens?: number; outputTokens?: number };
-type Ledger = { approval: '2026-10-21-additional-USD1'; attempts: Attempt[] };
-const MAX_REQUESTS = 40, RESERVATION_USD = .02, INPUT_RATE = .042 / 1000000;
+type Ledger = { approval: '2026-10-21-additional-USD1' | '2026-10-21-USD20-total'; attempts: Attempt[] };
+const MAX_REQUESTS = 800, RESERVATION_USD = .02, INPUT_RATE = .042 / 1000000;
 export class JevBudget {
   constructor(private readonly path: string, private readonly transport: Fetch = globalThis.fetch) {}
   readonly fetch: Fetch = async (url, init) => {
@@ -28,27 +28,27 @@ export class JevBudget {
     this.update(number, { status: 'complete', model: String(data.model), inputTokens: input, outputTokens: output }); return response;
   }
   private read(): Ledger {
-    if (!existsSync(this.path)) return { approval: '2026-10-21-additional-USD1', attempts: [] };
+    if (!existsSync(this.path)) return { approval: '2026-10-21-USD20-total', attempts: [] };
     const data = JSON.parse(readFileSync(this.path, 'utf8')) as Ledger;
-    if (data.approval !== '2026-10-21-additional-USD1' || !Array.isArray(data.attempts)) throw new Error('Invalid budget ledger'); return data;
+    if (!['2026-10-21-additional-USD1', '2026-10-21-USD20-total'].includes(data.approval) || !Array.isArray(data.attempts)) throw new Error('Invalid budget ledger'); return data;
   }
   private change<T>(mutate: (ledger: Ledger) => T): T {
     mkdirSync(dirname(this.path), { recursive: true }); const lock = openSync(`${this.path}.lock`, 'wx');
-    try { const ledger = this.read(); const result = mutate(ledger); writeFileSync(`${this.path}.tmp`, JSON.stringify(ledger, null, 2), { mode: 0o600 }); renameSync(`${this.path}.tmp`, this.path); return result; }
+    try { const ledger = this.read(); ledger.approval = '2026-10-21-USD20-total'; const result = mutate(ledger); writeFileSync(`${this.path}.tmp`, JSON.stringify(ledger, null, 2), { mode: 0o600 }); renameSync(`${this.path}.tmp`, this.path); return result; }
     finally { closeSync(lock); unlinkSync(`${this.path}.lock`); }
   }
   private reserve(): number {
     return this.change(ledger => {
       if (ledger.attempts.some(a => a.status !== 'complete')) throw new Error('Previous Jev request requires reconciliation; reconcile before continuing');
-      if (ledger.attempts.length >= MAX_REQUESTS) throw new Error('Jev request limit reached below USD1 ceiling');
+      if (ledger.attempts.length >= MAX_REQUESTS) throw new Error('Jev request limit reached below USD20 total ceiling');
       const number = ledger.attempts.length + 1; ledger.attempts.push({ number, status: 'pending' }); return number;
     });
   }
   private update(number: number, details: Partial<Attempt>): void { this.change(ledger => { Object.assign(ledger.attempts.find(a => a.number === number)!, details); }); }
   summary() {
     const attempts = this.read().attempts; const inputTokens = attempts.reduce((n, a) => n + (a.inputTokens ?? 0), 0);
-    return { approvalUsd: 1, maxRequests: MAX_REQUESTS, requests: attempts.length, remainingRequests: MAX_REQUESTS - attempts.length,
-      reservedUsd: attempts.length * RESERVATION_USD, conservativeRemainingUsd: 1 - attempts.length * RESERVATION_USD,
+    return { approvalUsd: 20, historicalReservationUsd: 2, maxRequests: MAX_REQUESTS, requests: attempts.length, remainingRequests: MAX_REQUESTS - attempts.length,
+      reservedUsd: attempts.length * RESERVATION_USD, conservativeRemainingUsd: 20 - 2 - attempts.length * RESERVATION_USD,
       inputTokens, estimatedUsd: inputTokens * INPUT_RATE, uncertain: attempts.filter(a => a.status !== 'complete').length,
       models: [...new Set(attempts.map(a => a.model).filter(Boolean))] };
   }

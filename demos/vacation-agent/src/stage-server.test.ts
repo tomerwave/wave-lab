@@ -22,6 +22,8 @@ async function assertBasicReads(url: string) {
     assert.equal((await fetch(`${url}/api/state`)).status, 200);
 }
 async function assertForeignHost(url: string) {
+    assert.equal((await fetch(`${url}/api/pacing`, { method: 'POST', headers: { Origin: 'null' }, body: '{"ms":5000}' })).status, 403);
+
     const foreignStatus = await new Promise<number | undefined>((resolve, reject) => { const req = request(`${url}/api/state`, { headers: { Host: 'foreign.example' } }, res => { res.resume(); resolve(res.statusCode); }); req.on('error', reject); req.end(); });
     assert.equal(foreignStatus, 403);
 }
@@ -36,9 +38,10 @@ import { StageController } from './stage-controller.js';
 import { offersFor, createStage } from './stage-state.js';
 function testRun() {
   const state = createStage();
-  return new StageController({ start: async () => 'test-only-signed-stream', sync: async () => undefined,
+  const controller = new StageController({ start: async () => 'test-only-signed-stream', sync: async () => undefined,
     observe: async () => ({ revision: state.revision, view: 'results', offers: offersFor(state) }), act: async () => undefined, close: async () => undefined,
   }, async () => 'ask:budget');
+  controller.state.budgetPending = true; return controller;
 }
 async function withLiveTestServer(check: (url: string) => Promise<void>) {
   const app = createStageServer({ liveEnabled: true, createRun: testRun });
@@ -50,6 +53,7 @@ async function postControl(url: string, path: string, data: Record<string, unkno
 }
 test('start waits for a viewer before decisions, stale commands reject, reset archives a URL-free transcript (test transport)', async () => {
   await withLiveTestServer(async url => {
+    await postControl(url, 'pacing', { ms: 0 });
     const start = await postControl(url, 'start'); const { runId } = await start.json();
     const before = await (await fetch(`${url}/api/state`)).json(); assert.deepEqual([before.run.status, before.run.decisions], ['paused', 0]);
     assert.equal((await postControl(url, 'ready', { runId: 'stale' })).status, 409);

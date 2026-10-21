@@ -6,7 +6,7 @@ test('AgentCore adapter uses one owned remote session, same live-view stream, vi
   const calls: string[] = []; let script = '';
   const remote: StageRemote = {
     async startSession(p) { assert.equal(p.timeout, 1200); calls.push('start'); }, async generateLiveViewUrl() { calls.push('stream'); return 'test-stream'; },
-    async navigate(p) { assert.ok(p.url.startsWith('data:text/html')); calls.push('page'); }, async evaluate(p) { script = p.script; return { offers: [], revision: 0, view: 'results' }; },
+    async navigate(p) { assertAgentDocument(p.url); calls.push('page'); }, async evaluate(p) { script = p.script; return { offers: [], revision: 0, view: 'results' }; },
     async click(p) { calls.push(p.selector); }, async stopSession() { calls.push('close'); },
   };
   const browser = new AgentCoreStageBrowser(remote); assert.equal(await browser.start(), 'test-stream');
@@ -20,3 +20,9 @@ test('stop while AWS start is pending cleans up the late session instead of navi
   const browser = new AgentCoreStageBrowser(remote); const pending = browser.start(); await browser.close(); resolve();
   await assert.rejects(pending, /stopped/); assert.equal(navigations, 0); assert.equal(stops, 2);
 });
+
+function assertAgentDocument(url: string): void {
+  assert.ok(url.startsWith('data:text/html'));
+  const html = Buffer.from(url.split(',')[1], 'base64').toString('utf8');
+  assert.ok(html.includes("connect-src 'none'")); assert.ok(!html.includes('id="gate"')); assert.ok(!html.includes('id="pace-toggle"'));
+}

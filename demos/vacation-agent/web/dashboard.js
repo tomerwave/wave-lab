@@ -11,7 +11,7 @@ async function command(path, body = {}) {
   if (commandBusy && !['stop', 'reset', 'ready'].includes(path)) return;
   commandBusy = true;
   try { await api(path, body); $('error').textContent = ''; await poll(); }
-  catch (error) { $('error').textContent = error.message; $('notice').textContent = error.message; }
+  catch (error) { $('gate-error').textContent = error.message; $('error').textContent = error.message; $('notice').textContent = error.message; }
   finally { commandBusy = false; }
 }
 function resize() {
@@ -28,7 +28,7 @@ const view = new StageLiveView(dcv, {
 function button(label, action) { const b = document.createElement('button'); b.textContent = label; b.onclick = action; return b; }
 function budgetInput(gate, run) {
   const input = document.createElement('input'); input.type = 'number'; input.min = '1'; input.max = '1000000'; input.step = '1'; input.value = String(run.state.requirements.budgetNis); input.setAttribute('aria-label', 'תקציב מאושר לכל הנוסעים בשקלים');
-  $('gate-body').append(input, button('אשר תקציב כולל ושלח לסוכן', () => command('answer', { id: gate.id, answer: { budgetNis: Number(input.value) } })));
+  $('gate-body').append(input, button('אשר תקציב כולל ושלח לסוכן', () => command('answer', { id: gate.id, answer: { budgetNis: Number(input.value) } })), button('לא מגדיל תקציב — השהה כדי לבחון פשרות', () => command('answer', { id: gate.id, answer: { choice: 'retain' } })));
 }
 function clarificationInput(gate) {
   const input = document.createElement('textarea'); input.maxLength = 2000; input.setAttribute('aria-label', 'הבהרה לסוכן');
@@ -48,7 +48,7 @@ function questionBody(gate, run) {
 function gateContent(run, gate) {
   $('gate-label').textContent = run.checkpoint ? `הקהל משנה את העולם / ${gate.number}` : snapshot.mode === 'local' ? 'הבהרה נדרשת בתרגול ידני / ללא AI' : 'הסוכן שואל את הנוסע / HUMAN GATE';
   $('gate-title').textContent = gate.text || (gate.number === 1 ? 'מי מצטרף לחופשה?' : 'עוד שינוי בתוכניות.');
-  $('gate-body').replaceChildren();
+  $('gate-body').replaceChildren(); $('gate-error').textContent = '';
   if (run.checkpoint) gate.choices.forEach(c => $('gate-body').append(button(c.label, () => command('vote', { id: gate.id, choice: c.id }))));
   else questionBody(gate, run);
 }
@@ -70,18 +70,29 @@ function renderBudget(run) {
   const budget = snapshot.budget;
   $('start-autonomous').hidden = !snapshot.autonomousEnabled;
   $('start-autonomous').disabled = !!run || budget?.remainingRequests <= 0 || budget?.uncertain > 0;
-  $('budget').textContent = budget ? `תקרת בדיקה נוספת: $1 · ${budget.requests} בקשות · עלות מוערכת $${budget.estimatedUsd.toFixed(6)} · נותרו עד ${budget.remainingRequests} בקשות לפי המגבלה השמרנית` : '';
+  $('budget').textContent = budget ? `תקרת שימוש כוללת: $20 · ${budget.requests} בקשות · עלות מוערכת $${budget.estimatedUsd.toFixed(6)} · נותרו עד ${budget.remainingRequests} בקשות לפי המגבלה השמרנית` : '';
 }
 function badge(run) {
   if (!run) return 'LOCAL / NO AI';
   const modes = { local: 'LOCAL / MANUAL / NO AI', 'local-autonomous': 'LOCAL / REAL JEV / NO AWS', live: 'LIVE / AWS' };
   return `${modes[snapshot.mode]} / ${run.decisions}`;
 }
+function renderTiming(run) {
+  if (document.activeElement !== $('pacing')) $('pacing').value = String(snapshot.pacingMs);
+  const label = snapshot.pacingMs ? 'קצב הדגמה: איטי מאוד (5s)' : 'קצב הדגמה: רגיל';
+  $('pace-toggle').textContent = label; $('gate-pace').textContent = label;
+  $('timing').textContent = `השהיית הדגמה: ${snapshot.pacingMs / 1000} שניות · קריאת Jev כולל רשת: ${run?.lastDecisionMs ?? '—'} ms` ;
+}
+function compactNotice(run) {
+  const r = run.state.requirements; const count = r.party.adults + r.party.children + r.party.infants;
+  const status = run.presenting ? `השהיית הדגמה ${run.pacingMs / 1000}s · ${run.lastVisibleAction || 'עדכון האתר'}` : statusText(run);
+  return `${count} נוסעים · ${r.days} ימים · ${r.budgetNis.toLocaleString('he-IL')} ₪ · ${status}`;
+}
 function renderHeader(run) {
-  $('mode').textContent = modeLabel(run); renderBudget(run);
+  $('mode').textContent = modeLabel(run); renderBudget(run); renderTiming(run);
   $('start').disabled = !!run; $('start-live').hidden = !snapshot.liveEnabled; $('start-live').disabled = !!run;
   $('badge').textContent = badge(run);
-  $('notice').textContent = run ? statusText(run) : 'אין סשן פעיל';
+  $('notice').textContent = run ? compactNotice(run) : 'אין סשן פעיל';
   if (run?.error) $('error').textContent = run.error;
 }
 function renderControls(run) {
@@ -129,6 +140,8 @@ addEventListener('message', event => {
 });
 $('ask-budget').onclick = () => command('local-action', { action: 'ask:budget', revision: snapshot?.run?.state.revision });
 $('reconnect').onclick = () => { const id = activeRunId(); if (id) void view.connect(id); };
+$('pace-toggle').onclick = $('gate-pace').onclick = () => command('pacing', { ms: snapshot.pacingMs ? 0 : 5000 });
+$('pacing').onchange = () => command('pacing', { ms: Number($('pacing').value) });
 $('start-autonomous').onclick = () => command('start-autonomous');
 $('start').onclick = () => command('start-local'); $('start-live').onclick = () => command('start'); $('stop').onclick = () => command('stop'); $('gate-stop').onclick = () => command('stop');
 $('pause').onclick = () => command('pause'); $('resume').onclick = () => command('resume'); $('reset').onclick = async () => { await command('reset'); replayData = undefined; };

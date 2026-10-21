@@ -2,6 +2,7 @@ import { createServer, type IncomingMessage, type ServerResponse } from 'node:ht
 import { readFile } from 'node:fs/promises';
 import { fileURLToPath } from 'node:url';
 import { resolve, sep } from 'node:path';
+import { BudgetAnswerError } from './stage-progress.js';
 import { LocalJevController } from './stage-local-jev.js';
 import { LocalStageController } from './stage-local.js';
 import { renderStageSite } from './stage-site.js';
@@ -32,8 +33,9 @@ async function webAsset(pathname: string, res: ServerResponse): Promise<void> {
   res.end(await readFile(new URL(pathname === '/' ? 'dashboard.html' : pathname.slice(1), webRoot)));
 }
 class StageHttp {
+  private pacingMs = 0;
   current?: Run; previous?: Snapshot; viewerReady = false; changingRun = false;
-  readonly server = createServer((req, res) => { void this.handle(req, res).catch(() => { if (!res.headersSent) json(res, 400, { error: 'Invalid request or unavailable operation. Inspect the run state.' }); else res.end(); }); });
+  readonly server = createServer((req, res) => { void this.handle(req, res).catch(error => { if (!res.headersSent) json(res, 400, { error: error instanceof BudgetAnswerError ? error.message : 'Invalid request or unavailable operation. Inspect the run state.' }); else res.end(); }); });
   constructor(private readonly options: StageServerOptions) { this.server.requestTimeout = 40000; this.server.headersTimeout = 10000; }
   private authorized(req: IncomingMessage): boolean {
     const address = this.server.address(); const port = address && typeof address === 'object' ? address.port : undefined;
@@ -50,7 +52,7 @@ class StageHttp {
   }
   private async get(pathname: string, res: ServerResponse): Promise<void> {
     const api: Record<string, () => unknown> = {
-      '/api/state': () => ({ liveEnabled: this.options.liveEnabled, mode: this.mode(), autonomousEnabled: this.options.autonomousEnabled ?? false, budget: this.options.budgetSummary?.(), run: this.current?.snapshot(), viewerReady: this.viewerReady, streamAvailable: this.streamAvailable() }),
+      '/api/state': () => ({ pacingMs: this.pacingMs, liveEnabled: this.options.liveEnabled, mode: this.mode(), autonomousEnabled: this.options.autonomousEnabled ?? false, budget: this.options.budgetSummary?.(), run: this.current?.snapshot(), viewerReady: this.viewerReady, streamAvailable: this.streamAvailable() }),
       '/api/local-page': () => this.current instanceof LocalStageController ? { ...this.current.page(), runId: this.current.state.id } : null,
       '/api/replay': () => ({ kind: 'recorded-transcript-not-live-ai', run: this.previous ?? this.current?.snapshot() ?? null }),
     };
@@ -82,6 +84,10 @@ class StageHttp {
   private async post(pathname: string, data: RequestData, res: ServerResponse): Promise<void> {
     const starts: Record<string, () => Promise<void>> = { '/api/start': () => this.start(res), '/api/start-local': () => this.startLocal(res), '/api/start-autonomous': () => this.startAutonomous(res) };
     if (starts[pathname]) return starts[pathname]();
+    return this.runPost(pathname, data, res);
+  }
+  private async runPost(pathname: string, data: RequestData, res: ServerResponse): Promise<void> {
+    if (pathname === '/api/pacing') return this.pacingResponse(data, res);
     if (!this.current || data.runId !== this.current.state.id) { json(res, 409, { error: 'Missing or stale run ID' }); return; }
     if (pathname === '/api/stop') { await this.current.stop(); json(res, 200, { ok: true }); return; }
     if (pathname === '/api/reset') return this.reset(res);
@@ -91,15 +97,18 @@ class StageHttp {
     if (!this.options.liveEnabled) { json(res, 409, { error: 'Paid services disabled. A separate approved live rehearsal and ALLOW_PAID_STAGE=1 are required.' }); return; }
     if (this.current || this.changingRun) { json(res, 409, { error: 'Reset before starting another run' }); return; }
     this.changingRun = true;
-    try { this.current = this.options.createRun(); await this.current.start(); this.current.pause(); await this.current.pump(); json(res, 200, { runId: this.current.state.id }); }
+    try { this.current = this.options.createRun(); await this.prepare(); json(res, 200, { runId: this.current.state.id }); }
     finally { this.changingRun = false; }
   }
   private async startAutonomous(res: ServerResponse): Promise<void> {
     if (!this.options.autonomousEnabled || !this.options.createAutonomousRun) { json(res, 409, { error: 'Local paid Jev validation disabled' }); return; }
     if (this.current || this.changingRun) { json(res, 409, { error: 'Reset before starting another run' }); return; }
     this.changingRun = true;
-    try { this.current = this.options.createAutonomousRun(); await this.current.start(); this.current.pause(); await this.current.pump(); json(res, 200, { runId: this.current.state.id }); }
+    try { this.current = this.options.createAutonomousRun(); await this.prepare(); json(res, 200, { runId: this.current.state.id }); }
     finally { this.changingRun = false; }
+  }
+  private async prepare(): Promise<void> {
+    const run = this.current as StageController; run.setPacing(this.pacingMs); await run.start(); run.pause(); await run.pump();
   }
   private async startLocal(res: ServerResponse): Promise<void> {
     if (this.current || this.changingRun) { json(res, 409, { error: 'Reset before starting another run' }); return; }
@@ -112,6 +121,13 @@ class StageHttp {
     this.changingRun = true;
     try { this.previous = this.current!.snapshot(); await this.current!.stop(); this.current = undefined; this.viewerReady = false; json(res, 200, { ok: true }); }
     finally { this.changingRun = false; }
+  }
+  private pacingResponse(data: RequestData, res: ServerResponse): void { this.pacing(data); json(res, 200, { ok: true }); }
+  private pacing(data: RequestData): void {
+    if (this.current && data.runId !== this.current.state.id) throw new Error('Missing or stale run ID');
+    const ms = Number(data.ms);
+    if (!Number.isInteger(ms) || ms < 0 || ms > 10000) throw new Error('Pacing must be 0–10000 ms');
+    this.pacingMs = ms; if (this.current instanceof StageController) this.current.setPacing(ms);
   }
   private control(pathname: string, data: RequestData): void {
     if (this.changingRun) throw new Error('Run is starting/resetting');

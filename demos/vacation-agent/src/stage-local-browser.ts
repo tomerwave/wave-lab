@@ -1,3 +1,4 @@
+import { isolatedAgentSite } from './stage-security.js';
 import { chromium, type Browser, type Page } from 'playwright';
 import type { StageBrowser, StageObservation } from './stage-controller.js';
 import { offersFor, type StageState } from './stage-state.js';
@@ -10,7 +11,7 @@ export class LocalAutonomousBrowser implements StageBrowser {
     this.browser = await chromium.launch({ executablePath: this.options.executablePath, headless: !this.options.headed, slowMo: this.options.slowMoMs });
     if (this.closed) { await this.browser.close(); throw new Error('Local browser stopped'); }
     this.page = await this.browser.newPage({ viewport: { width: 1440, height: 900 } });
-    await this.page.setContent(renderStageSite()); this.check(); return '';
+    await this.page.setContent(isolatedAgentSite(renderStageSite())); this.check(); return '';
   }
   async sync(state: StageState): Promise<void> {
     await this.check().evaluate(data => (window as unknown as { __stageSync(d: unknown): void }).__stageSync(data), { revision: state.revision, iran: state.world.iran, offers: offersFor(state) });

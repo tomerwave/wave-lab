@@ -155,8 +155,52 @@ test('autonomous dashboard shows actual local browser frame and waits for image 
   finally { await page.close(); await app.close(); }
 });
 async function assertAutonomousView(page: Page, url: string) {
-  await page.goto(url); await page.getByRole('button', { name: 'התחל סוכן Jev בדפדפן מקומי' }).click();
+  await page.goto(url); await page.getByRole('button', { name: 'יומן / Replay' }).click();
+  await page.getByLabel('השהיית הדגמה בין פעולות — אינה זמן תגובת Jev').selectOption('5000');
+  await page.getByRole('button', { name: 'חזרה לתצוגה' }).click();
+  const started = performance.now(); await page.getByRole('button', { name: 'התחל סוכן Jev בדפדפן מקומי' }).click();
   await page.getByRole('heading', { name: 'מי מצטרף לחופשה?' }).waitFor();
+  assert.ok(performance.now() - started >= 9000);
   assert.ok(await page.locator('#local-agent-view').evaluate((img: HTMLImageElement) => img.naturalWidth > 1000));
   assert.ok((await page.locator('#badge').innerText()).includes('LOCAL / REAL JEV / NO AWS'));
+}
+test('real DOM can revisit a known refundable hotel after inspecting incompatible Flash (test-only choices)', async () => {
+  const sequence = ['inspect:harbor', 'inspect:white', 'inspect:garden', 'inspect:flash', 'revisit:white', 'review:white'];
+  const local = new LocalAutonomousBrowser({ ...loadRunConfig(), headed: false });
+  const c = new StageController(local, async d => { const id = sequence.shift()!; assert.ok(d.actions.some(a => a.id === id)); return id; });
+  c.stage = 4; c.state.world.greatOffer = true; c.state.cancellationChoice = 'compare';
+  try { await c.start(); await c.pump(); assert.equal(c.status, 'review'); assert.equal((await local.observe()).selected, 'white'); }
+  finally { await c.stop(); }
+});
+import { isolatedAgentSite } from '../src/stage-security.js';
+test('isolated agent travel page cannot access control-center APIs or observe presenter DOM', async () => {
+  const app = createStageServer({ liveEnabled: false, createRun() { throw new Error('No paid services'); } });
+  await new Promise<void>(r => app.server.listen(0, '127.0.0.1', r)); const address = app.server.address(); assert.ok(address && typeof address !== 'string');
+  const page = await browser.newPage();
+  try { await assertAgentIsolation(page, `http://127.0.0.1:${address.port}`); }
+  finally { await page.close(); await app.close(); }
+});
+
+async function assertAgentIsolation(page: Page, url: string) {
+  let requests = 0; page.on('request', () => { requests++; });
+  await page.setContent(isolatedAgentSite(renderStageSite())); await sync(page, createStage());
+  assert.equal(await page.locator('#tools, #pacing, #gate, #start-autonomous').count(), 0);
+  const blocked = await page.evaluate(async endpoint => { try { await fetch(endpoint, { method: 'POST', body: JSON.stringify({ ms: 5000 }) }); return false; } catch { return true; } }, `${url}/api/pacing`);
+  assert.ok(blocked); assert.equal(requests, 0); assert.equal((await (await fetch(`${url}/api/state`)).json()).pacingMs, 0);
+}
+for (const width of [1440, 390]) {
+  test(`travel product filters, prices and Iran transformation work at ${width}px without horizontal overflow`, async () => {
+    const page = await browser.newPage({ viewport: { width, height: 900 } });
+    try { await assertTravelSearch(page); assert.ok(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)); }
+    finally { await page.close(); }
+  });
+}
+async function assertTravelSearch(page: Page) {
+  await page.setContent(isolatedAgentSite(renderStageSite())); const state = createStage(); await sync(page, state);
+  await page.locator('#destination-filter').selectOption('Athens'); assert.equal(await page.locator('.grid article').count(), 1);
+  await page.locator('#destination-filter').selectOption(''); await page.locator('#price-sort').selectOption('price-desc');
+  assert.ok((await page.locator('.grid article').first().innerText()).includes('White Courtyard'));
+  applyScenario(state, 'world', 'iran'); applyScenario(state, 'flash', 'great-offer'); await sync(page, state);
+  await page.locator('#refund-filter').check(); assert.equal(await page.locator('.grid article').count(), 3);
+  assert.ok((await page.locator('.world-banner').innerText()).includes('איראן'));
 }

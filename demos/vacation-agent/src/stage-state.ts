@@ -37,6 +37,7 @@ export function applyScenario(s: StageState, id: string, kind: ScenarioEvent, of
 }
 const humanAnswers: Record<QuestionKind, (s: StageState, a: Record<string, unknown>) => void> = {
   budget: (s, a) => {
+    if (a.choice === 'retain') { s.budgetPending = false; user(s, `אני שומר על התקציב של ${s.requirements.budgetNis} ₪. כרגע אין אישור להגדלה או לוויתור על תנאים; השהה כדי שנבחן פשרות.`); return; }
     const amount = Number(a.budgetNis);
     if (!Number.isSafeInteger(a.budgetNis) || amount <= 0 || amount > 1000000) throw new Error('Budget must be a positive whole NIS amount up to 1,000,000');
     s.requirements.budgetNis = amount; s.budgetPending = false;

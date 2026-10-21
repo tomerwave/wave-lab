@@ -1,3 +1,5 @@
+import { setTimeout as delay } from 'node:timers/promises';
+import { budgetQuestion, progressKey, validateBudgetAnswer } from './stage-progress.js';
 import { randomUUID } from 'node:crypto';
 import { answerHuman, applyScenario, checkpointChoices, createStage, offerProblems, progressAfterInspection, type Offer, type QuestionKind, type ScenarioEvent, type StageState } from './stage-state.js';
 export type StageObservation = { revision: number; view: 'results' | 'details' | 'review'; selected?: string; offers: Offer[] };
@@ -16,11 +18,17 @@ export const QUESTIONS: Record<QuestionKind, string> = {
 };
 export function stageActions(s: StageState, page: StageObservation, stage: number): StageAction[] {
   const actions: StageAction[] = (s.budgetPending ? [] : page.offers).filter(o => o.available).map(o => ({ id: `inspect:${o.id}`, description: `Read ${o.hotel} in ${o.destination}, total ${o.totalNis} NIS including flight and hotel. Read fine print before review.` }));
-  actions.push({ id: 'ask:budget', description: 'Ask the traveler for an explicit total budget. Required after travelers join; also use if no offer fits.' },
-    { id: 'ask:constraints', description: 'Ask the human for clarification when preferences, facts or authority are unclear; never invent approval.' });
+  actions.push(...clarificationActions(s, page));
   if (s.destinationPending) actions.push({ id: 'ask:destination', description: 'Ask informed permission to explore the fictional changed Iranian destinations; existing vacation intent does not approve a specific new destination.' });
   if (needsCancellationQuestion(s, page)) actions.push({ id: 'ask:cancellation', description: 'Surface the nonrefundable fine print conflicting with original cancellation for BOTH flight and hotel. Ask waive, retain or compare; do not waive yourself.' });
   actions.push(...reviewActions(s, page, stage));
+  return actions;
+}
+function clarificationActions(s: StageState, page: StageObservation): StageAction[] {
+  const actions: StageAction[] = [];
+  const viable = page.offers.some(o => offerProblems(o, s).every(p => ['budget_unconfirmed', 'destination_unconfirmed'].includes(p)));
+  if (s.budgetPending || !viable) actions.push({ id: 'ask:budget', description: 'Ask the traveler for an explicit total budget. Required after travelers join; also use if no offer fits.' });
+  if (!viable && !s.budgetPending && !s.destinationPending) actions.push({ id: 'ask:constraints', description: 'No offer meets current constraints. Ask which tradeoffs the traveler wants to explore; never invent a waiver or budget change.' });
   return actions;
 }
 function reviewActions(s: StageState, page: StageObservation, stage: number): StageAction[] {
@@ -46,6 +54,12 @@ export class StageController {
   checkpoint?: { id: string; number: number; choices: ReturnType<typeof checkpointChoices> };
   question?: { id: string; kind: QuestionKind; text: string };
   liveViewUrl?: string; error?: string; stage = 0; decisions = 0;
+  private pacingAbort?: AbortController; private presentedRevision = -1;
+  lastVisibleAction?: string;
+  pacingMs = 0; lastDecisionMs?: number; presenting = false;
+  private observation?: StageObservation;
+  private readonly progress = new Map<string, number>();
+  setPacing(ms: number): void { if (!Number.isInteger(ms) || ms < 0 || ms > 10000) throw new Error('Pacing must be 0–10000 ms'); this.pacingMs = ms; this.pacingAbort?.abort(); }
   private readonly abort = new AbortController(); private busy = false; private pauseRequested = false;
   constructor(private readonly browser: StageBrowser, private readonly select: StageSelector) {}
   async start(): Promise<void> {
@@ -56,7 +70,7 @@ export class StageController {
       this.status = 'running';
     } catch (e) { if (!this.abort.signal.aborted) { this.status = 'error'; this.error = errorText(e); } await this.browser.close(); }
   }
-  pause(): void { this.pauseRequested = true; }
+  pause(): void { this.pauseRequested = true; this.pacingAbort?.abort(); }
   resume(): void {
     if (this.status !== 'paused') throw new Error('Only a manual pause can resume; answer the pending vote or question first');
     this.pauseRequested = false; this.status = 'running';
@@ -70,7 +84,9 @@ export class StageController {
   }
   answer(id: string, answer: Record<string, unknown>): void {
     if (this.status !== 'question' || this.question?.id !== id) throw new Error('Stale or missing human question');
-    answerHuman(this.state, this.question.kind, answer); this.question = undefined; this.status = 'running';
+    const retainBudget = this.question.kind === 'budget' && answer.choice === 'retain';
+    if (this.question.kind === 'budget' && answer.choice !== 'retain') validateBudgetAnswer(this.state, answer.budgetNis, this.observation?.offers ?? []);
+    answerHuman(this.state, this.question.kind, answer); this.question = undefined; this.status = retainBudget ? 'paused' : 'running';
   }
   async stop(): Promise<void> {
     this.abort.abort(); this.status = 'stopped'; this.liveViewUrl = undefined;
@@ -100,10 +116,13 @@ export class StageController {
     await bounded(this.browser.sync(this.state), this.abort.signal);
     const page = await bounded(this.browser.observe(), this.abort.signal);
     if (page.revision !== this.state.revision) throw new Error('Page/world revision mismatch');
-    const actions = stageActions(this.state, page, this.stage); const revision = this.state.revision;
+    this.observation = page;
+    await this.presentRevision();
+    if (this.pauseRequested) return { id: 'paused', revision: this.state.revision };
+    const actions = this.availableActions(page); const revision = this.state.revision;
     this.decisions += 1;
     const input = structuredClone({ state: this.state, page, history: this.history, actions });
-    const id = await bounded(this.select(input, this.abort.signal), this.abort.signal);
+    const id = await this.selectTimed(input);
     this.abort.signal.throwIfAborted();
     if (!actions.some(a => a.id === id)) throw new Error('Selector returned an unavailable action');
     return { id, revision };
@@ -116,9 +135,11 @@ export class StageController {
     await this.execute(id, revision);
   }
   private ask(id: string, revision: number): void {
+    this.recordProgress(id);
     const kind = id.slice(4) as QuestionKind;
-    this.state.conversation.push({ role: 'agent', text: QUESTIONS[kind] });
-    this.question = { id: randomUUID(), kind, text: QUESTIONS[kind] }; this.status = 'question';
+    const text = kind === 'budget' ? budgetQuestion(this.state, QUESTIONS[kind], this.observation?.offers ?? []) : QUESTIONS[kind];
+    this.state.conversation.push({ role: 'agent', text });
+    this.question = { id: randomUUID(), kind, text }; this.status = 'question';
     this.history.push({ action: id, revision, result: 'waiting for human; no browser action' });
   }
   private async execute(id: string, revision: number): Promise<void> {
@@ -126,11 +147,34 @@ export class StageController {
     this.abort.signal.throwIfAborted();
     if (fresh.revision !== revision) throw new Error('Page changed before action');
     if (id.startsWith('review:')) this.validateReview(id, fresh);
-    await bounded(this.browser.act(id), this.abort.signal);
+    await bounded(this.browser.act(id.replace(/^revisit:/, 'inspect:')), this.abort.signal);
     this.abort.signal.throwIfAborted();
-    this.history.push({ action: id, revision, result: 'completed' });
+    this.lastVisibleAction = visibleAction(id, fresh);
+    this.recordProgress(id); this.history.push({ action: id, revision, result: 'completed' });
     if (id.startsWith('review:')) { this.status = 'review'; return; }
-    this.afterInspection(id.slice(8));
+    await this.present(); if (!id.startsWith('revisit:')) this.afterInspection(id.slice(8));
+  }
+  private availableActions(page: StageObservation): StageAction[] {
+    const actions = stageActions(this.state, page, this.stage).filter(a => !a.id.startsWith('inspect:') || !this.progress.has(progressKey(this.state, this.stage, a.id)));
+    if (this.stage >= 4) actions.push(...page.offers.filter(o => o.id !== page.selected && !offerProblems(o, this.state).length && this.progress.has(progressKey(this.state, this.stage, `inspect:${o.id}`))).map(o => ({ id: `revisit:${o.id}`, description: `Return to already inspected ${o.hotel} for booking review. Reuse the observed policy; this is navigation, not a new inspection.` })));
+    return actions;
+  }
+  private async selectTimed(input: StageDecision): Promise<string> {
+    const started = performance.now(); const id = await bounded(this.select(input, this.abort.signal), this.abort.signal);
+    this.lastDecisionMs = Math.round(performance.now() - started); return id;
+  }
+  private recordProgress(id: string): void {
+    const key = progressKey(this.state, this.stage, id); const count = (this.progress.get(key) ?? 0) + 1;
+    if (count > 2) throw new Error('No progress: repeated action with unchanged requirements/world. Inspect history before restarting.');
+    this.progress.set(key, count);
+  }
+  private async presentRevision(): Promise<void> {
+    if (this.presentedRevision === this.state.revision) return; this.presentedRevision = this.state.revision; await this.present();
+  }
+  private async present(): Promise<void> {
+    if (!this.pacingMs || this.pauseRequested) return; this.presenting = true; this.pacingAbort = new AbortController();
+    try { await delay(this.pacingMs, undefined, { signal: AbortSignal.any([this.abort.signal, this.pacingAbort.signal]) }); }
+    catch { this.abort.signal.throwIfAborted(); } finally { this.presenting = false; this.pacingAbort = undefined; }
   }
   private validateReview(id: string, page: StageObservation): void {
     const offer = page.offers.find(o => o.id === id.slice(7));
@@ -144,8 +188,12 @@ export class StageController {
     this.abort.abort(); await this.browser.close();
   }
   snapshot() {
-    return structuredClone({ state: this.state, history: this.history, status: this.status, checkpoint: this.checkpoint, question: this.question, stage: this.stage, decisions: this.decisions, error: this.error });
+    return structuredClone({ state: this.state, history: this.history, status: this.status, checkpoint: this.checkpoint, question: this.question, stage: this.stage, decisions: this.decisions, lastVisibleAction: this.lastVisibleAction, pacingMs: this.pacingMs, presenting: this.presenting, lastDecisionMs: this.lastDecisionMs, error: this.error });
   }
+}
+function visibleAction(id: string, page: StageObservation): string {
+  const hotel = page.offers.find(o => o.id === id.split(':')[1])?.hotel ?? id;
+  return `${id.startsWith('review:') ? 'סיכום' : 'נבדקה הצעה'}: ${hotel}`;
 }
 function errorText(e: unknown): string {
   const message = e instanceof Error ? e.message : 'operation_failed';

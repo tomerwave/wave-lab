@@ -20,7 +20,7 @@ const app = createStageServer({ autonomousEnabled: local.enabled, budgetSummary:
   return new StageController(createStageAgentCore(aws.region), createStageSelector(new TypeSafeClient({ apiKey: jev.apiKey, logLevel: 'off', timeout: 20000, retry: { maxRetries: 1 } })));
 } });
 app.server.on('error', () => { writeError('Stage server could not start. Check the local port.'); process.exitCode = 1; });
-app.server.listen(config.port, '127.0.0.1', () => writeLine(`Vacation stage: http://127.0.0.1:${config.port} · ${local.enabled ? 'LOCAL Jev enabled within shared USD1 validation cap; no AWS' : 'LOCAL manual rehearsal; paid services gated'}`));
+app.server.listen(config.port, '127.0.0.1', () => writeLine(`Vacation stage: http://127.0.0.1:${config.port} · ${local.enabled ? 'LOCAL Jev enabled within shared USD20 total cap; no AWS' : 'LOCAL manual rehearsal; paid services gated'}`));
 let closing = false;
 const close = () => { if (closing) return; closing = true; void app.close().catch(() => { writeError('Session cleanup failed; inspect the owned AgentCore session in AWS. It has a 20-minute expiry.'); process.exitCode = 1; }); };
 process.once('SIGINT', close); process.once('SIGTERM', close);

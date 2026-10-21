@@ -6,14 +6,14 @@ import { join } from 'node:path';
 import { JevBudget } from './stage-budget.js';
 function fixture() { const dir = mkdtempSync(join(tmpdir(), 'jev-budget-')); return { path: join(dir, 'ledger.json'), close: () => rmSync(dir, { recursive: true }) }; }
 const response = () => new Response(JSON.stringify({ model: 'test-model', usage: { input_tokens: 1000, output_tokens: 2 } }));
-test('request reservations survive restart and stop before USD1; only usage metadata is stored', async () => {
+test('request reservations survive restart and stop before USD20 total including historical reserve; only usage metadata is stored', async () => {
   const f = fixture(); let calls = 0;
   try {
     const transport = async () => { calls++; return response(); };
-    for (let i = 0; i < 40; i++) await new JevBudget(f.path, transport).fetch('https://api.typesafe.ai/v1/systemone', { body: '{"model":"jev-1.13.0"}' });
+    for (let i = 0; i < 800; i++) await new JevBudget(f.path, transport).fetch('https://api.typesafe.ai/v1/systemone', { body: '{"model":"jev-1.13.0"}' });
     await assert.rejects(new JevBudget(f.path, transport).fetch('https://api.typesafe.ai/v1/systemone', { body: '{"model":"jev-1.13.0"}' }), /limit/);
     const summary = new JevBudget(f.path).summary();
-    assert.equal(calls, 40); assert.equal(summary.inputTokens, 40000); assert.ok(summary.reservedUsd < 1); assert.equal(summary.uncertain, 0);
+    assert.equal(calls, 800); assert.equal(summary.inputTokens, 800000); assert.ok(summary.reservedUsd + summary.historicalReservationUsd < 20); assert.equal(summary.uncertain, 0);
   } finally { f.close(); }
 });
 test('uncertain network request blocks further calls and oversize input is blocked before transmission', async () => {
