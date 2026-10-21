@@ -8,7 +8,9 @@
     "typecheck": "tsc --noEmit",
     "test": "node --import tsx --test src/*.test.ts",
     "build:site": "node --import tsx scripts/build-site.mjs",
-    "test:native": "node --import tsx --test scripts/webmcp.browser.test.ts"
+    "test:native": "node --import tsx --test scripts/webmcp.browser.test.ts",
+    "stage": "node --import tsx src/stage-demo.ts",
+    "test:stage:browser": "node --import tsx --test scripts/stage.browser.test.ts"
   },
   "license": "MIT",
   "type": "module",

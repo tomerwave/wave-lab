@@ -10,7 +10,7 @@ relates-to: [wavelab-demo-boundaries]
 
 ## Rule
 
-The model returns one action id from the list the code offers. The code resolves it through the registry, reads fresh page state, checks it, and only then clicks. Budget and accessibility are checked in code. The agent never clicks pay, and the planner cannot change the conditions.
+The model returns one action id from the list the code offers. The code resolves it through the registry, reads fresh page state, checks it, and only then clicks. In the legacy CLI, budget and accessibility are checked in code. In the stage dashboard, cumulative approved travelers, dates, total budget, destination approval, explicit hotel preferences and cancellation for both flight and hotel are checked in code; do not add an initial cleanliness or accessibility requirement absent from the stage brief. The agent never clicks pay, and the planner cannot change the conditions.
 
 ## Why
 

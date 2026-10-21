@@ -6,4 +6,4 @@ Run `npm run check` before completing a change. Do not disable lint rules or cha
 
 Keep fictional billing data and simulated payments. Never expose unsafeRefund to a model. Changes to the CLI must preserve the five offline examples; live model execution is optional and must not be described as verified without running it.
 
-In demos/vacation-agent, read docs/godharness/vacation-agent.md. Keep the four recorded runs in its examples folder in sync with the CLI, never let the agent click pay, and keep budget and accessibility checks in code.
+In demos/vacation-agent, read docs/godharness/vacation-agent.md. Keep the four recorded runs in its examples folder in sync with the CLI, never let the agent click pay, and keep the legacy budget and accessibility checks in code. For the stage dashboard, follow talk/stage-guide.md and keep cumulative traveler, total-budget, date and flight/hotel cancellation checks in code; the stage starts without cleanliness or accessibility requirements.

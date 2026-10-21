@@ -24,3 +24,9 @@ export function loadAwsConfig(): AwsConfig {
   if (!region) throw new Error('Set AWS_REGION and AWS credentials to use --browser agentcore or --planner strands.');
   return { region, plannerModelId: process.env.BEDROCK_MODEL_ID || DEFAULT_PLANNER_MODEL };
 }
+
+export function loadStageConfig(): { port: number; liveEnabled: boolean } {
+  const port = Number(process.env.STAGE_PORT ?? '4317');
+  if (!Number.isInteger(port) || port < 1024 || port > 65535) throw new Error('STAGE_PORT must be an integer from 1024 to 65535');
+  return { port, liveEnabled: process.env.ALLOW_PAID_STAGE === '1' };
+}

@@ -1,0 +1,21 @@
+# Vacation stage demo
+
+Approved brief: an autonomous vacation agent adapts to changing travelers, budget, dates, inventory and policies, asking the human when authority or facts are missing. Four days abroad, NIS 3,000 total flight + hotel, refundable flight AND hotel, one adult; never book. No initial clean-hotel constraint. All offers and geopolitical/policy events are fictional.
+
+## Incremental reuse
+Keep the existing hotel CLI and its tests intact. Reuse installed TypeSafe Jev and AgentCore Playwright SDKs. Add a separate stage domain/controller, offer website, Jev adapter, browser adapter and localhost dashboard. No new dependencies. The old PDF is not the specification.
+
+## State and boundaries
+One run owns world revision, cumulative traveler requirements, conversation, tool history, event journal, pending question and presenter checkpoint. Each completed offer inspection is a semantic boundary. Finish the tool before opening a checkpoint; never start another action while paused. Deduplicate event IDs; reconnecting/retrying a vote cannot apply it twice. A run lock excludes concurrent decisions. Emergency stop aborts decisions immediately and closes the owned browser; reset/replay creates a new run and visibly retains an event transcript, not a pretend AI response.
+
+First inspection: girlfriend or two children (including one infant and crib), no no-op. Ask whether budget changes, with presenter supplying a number. Next inspection: halve the current budget, move departure seven days, or branch-specific hotel rejection (white clean appearance for girlfriend; fictional discriminatory hotel policy otherwise). Third inspection: automatic fictional Iran-world change, including visible site theme and Iranian destinations; append traveler intent to keep seeking a vacation, require informed destination clarification. Fourth inspection: inject a matching cheap nonrefundable offer; policy remains in visible fine print and machine-readable page facts. Model can ask for cancellation waiver, retain cancellation, or compare refundable alternatives. Stop at booking review only.
+
+## Decisions and safety
+Jev systemOne choice is a constrained action selector, not a conversational or browser vision API. Send full bounded conversation/tool history, current page observation and cumulative constraints each turn. The model selects inspect, human question, compare, or booking review; no scripted live decisions or offline chooser in production. Code validates current offer/revision and all requirements before booking review. Requirement updates are user conversation messages. World events change the real page the same browser observes. Missing options lead to human questions rather than silently relaxing constraints. Limit decisions, retries and operation timeouts; no payment tool or real booking endpoint.
+
+## Display and validation
+Dashboard runs on loopback and uses the installed AWS DCV web client directly to display the SAME AgentCore session full size. Minimal floating controls; checkpoint/question dialogs overlay the view, logs are closed normally. No iframe mock browser substitute. Offline preview labels itself disconnected and never starts paid services. Live launch additionally requires explicit runtime opt-in. Signed view URLs stay in memory, out of logs/replay. Local tests use test doubles and local Chromium; actual Jev/AgentCore and DCV connectivity require separate paid-service approval and are not claimed verified.
+
+## Local-first scope update
+
+The user subsequently requested starting locally. Default startup now enables a real local website/dashboard/scenario rehearsal with explicit LOCAL / MANUAL / NO AI labeling. The presenter selects actions; deterministic policy gates are identified as local code, never as generated AI. No local autonomous provider is available or claimed. A same-origin iframe displays the actual local website, not an AgentCore simulation. Domain events/progress and safety checks are reused; paid Jev/AgentCore/DCV integration is preserved behind its opt-in for later approval. Local UI end-to-end tests cover the actual page, modal questions, cumulative constraints and booking review with the paid factory disabled.

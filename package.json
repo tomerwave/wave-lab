@@ -20,7 +20,8 @@
     "lint:github": "godlint check --format github",
     "lint:json": "godlint check --format json",
     "harness:check": "godharness check && godharness doctor",
-    "harness:context": "godharness context"
+    "harness:context": "godharness context",
+    "demo:stage": "npm run stage --workspace=@tomerwave/vacation-agent"
   },
   "license": "MIT",
   "devDependencies": {
