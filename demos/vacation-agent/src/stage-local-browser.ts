@@ -27,6 +27,7 @@ export class LocalAutonomousBrowser implements StageBrowser {
     const state = await this.observe();
     if (state.view !== 'results') await this.check().locator('#back').click({ timeout: 5000 });
   }
+  async screenshot(): Promise<Buffer> { return this.check().screenshot({ type: 'jpeg', quality: 80, timeout: 5000 }); }
   async close(): Promise<void> { this.closed = true; await this.browser?.close(); }
   private check(): Page { if (this.closed || !this.page) throw new Error('Local browser stopped or not started'); return this.page; }
 }

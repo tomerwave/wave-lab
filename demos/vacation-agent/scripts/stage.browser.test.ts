@@ -143,3 +143,20 @@ test('production local autonomous browser adapter runs the real page with a test
   try { await c.start(); await c.pump(); assert.deepEqual([c.status, (await local.observe()).selected], ['checkpoint', 'harbor']); }
   finally { await c.stop(); }
 });
+
+import { LocalJevController } from '../src/stage-local-jev.js';
+test('autonomous dashboard shows actual local browser frame and waits for image before model (test-only selector)', async () => {
+  let decisions = 0;
+  const app = createStageServer({ liveEnabled: false, autonomousEnabled: true, createRun() { throw new Error('AWS disabled'); },
+    createAutonomousRun: () => new LocalJevController(new LocalAutonomousBrowser({ ...loadRunConfig(), headed: false }), async d => { decisions++; return testOnlySelector(d); }) });
+  await new Promise<void>(r => app.server.listen(0, '127.0.0.1', r)); const address = app.server.address(); assert.ok(address && typeof address !== 'string');
+  const page = await browser.newPage();
+  try { await assertAutonomousView(page, `http://127.0.0.1:${address.port}`); assert.equal(decisions, 1); }
+  finally { await page.close(); await app.close(); }
+});
+async function assertAutonomousView(page: Page, url: string) {
+  await page.goto(url); await page.getByRole('button', { name: 'התחל סוכן Jev בדפדפן מקומי' }).click();
+  await page.getByRole('heading', { name: 'מי מצטרף לחופשה?' }).waitFor();
+  assert.ok(await page.locator('#local-agent-view').evaluate((img: HTMLImageElement) => img.naturalWidth > 1000));
+  assert.ok((await page.locator('#badge').innerText()).includes('LOCAL / REAL JEV / NO AWS'));
+}

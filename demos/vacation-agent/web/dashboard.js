@@ -2,7 +2,7 @@ import dcv from '/dcv/dcv.js';
 import { StageLiveView } from '/live-view.js';
 const $ = id => document.getElementById(id);
 let snapshot, gateId, streamRun, replayData;
-let pollBusy = false, commandBusy = false;
+let pollBusy = false, commandBusy = false, frameBusy = false, frameReadyRun;
 async function api(path, body) {
   const response = await fetch(`/api/${path}`, body === undefined ? {} : { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ runId: snapshot?.run?.state.id, ...body }) });
   const value = await response.json(); if (!response.ok) throw new Error(value.error || 'הפעולה נכשלה'); return value;
@@ -62,26 +62,56 @@ function showGate(run) {
 const statuses = { starting: 'פותח את סשן AgentCore', running: 'הסוכן פועל', paused: 'הסוכן מושהה בגבול פעולה', checkpoint: 'הפעולה הסתיימה. ממתין לבחירת הקהל', question: 'הסוכן ממתין לתשובת הנוסע', review: 'סיכום לבדיקה בלבד. לא בוצעה הזמנה', stopped: 'הריצה נעצרה', error: 'הריצה נעצרה בגלל שגיאה' };
 const localStatuses = { running: 'תרגול ידני — בחרו הצעה באתר', paused: 'התרגול מושהה', checkpoint: 'הצבעת קהל', question: 'הבהרה נדרשת בתרגול ידני — ללא AI', review: 'סיכום לבדיקה בלבד', stopped: 'התרגול נעצר' };
 function statusText(run) { const labels = snapshot.mode === 'local' ? localStatuses : statuses; return `${labels[run.status] || run.status}${run.state.world.iran ? ' · עולם בדיוני: כל היעדים באיראן' : ''}`; }
-function modeLabel(run) { return run && snapshot.mode === 'live' ? 'LIVE · Jev + AWS AgentCore · שירותים בתשלום; בחירות מודל חיות' : 'LOCAL · תרגול ידני באתר מקומי. ללא AI, ללא AWS וללא חיוב.'; }
+function modeLabel(run) {
+  if (run && snapshot.mode === 'local-autonomous') return 'LOCAL / REAL JEV · דפדפן Chromium אמיתי ותצוגת צילומים חיה · ללא AWS';
+  return run && snapshot.mode === 'live' ? 'LIVE · Jev + AWS AgentCore · שירותים בתשלום; בחירות מודל חיות' : 'LOCAL · תרגול ידני באתר מקומי. ללא AI, ללא AWS וללא חיוב.';
+}
+function renderBudget(run) {
+  const budget = snapshot.budget;
+  $('start-autonomous').hidden = !snapshot.autonomousEnabled;
+  $('start-autonomous').disabled = !!run || budget?.remainingRequests <= 0 || budget?.uncertain > 0;
+  $('budget').textContent = budget ? `תקרת בדיקה נוספת: $1 · ${budget.requests} בקשות · עלות מוערכת $${budget.estimatedUsd.toFixed(6)} · נותרו עד ${budget.remainingRequests} בקשות לפי המגבלה השמרנית` : '';
+}
+function badge(run) {
+  if (!run) return 'LOCAL / NO AI';
+  const modes = { local: 'LOCAL / MANUAL / NO AI', 'local-autonomous': 'LOCAL / REAL JEV / NO AWS', live: 'LIVE / AWS' };
+  return `${modes[snapshot.mode]} / ${run.decisions}`;
+}
 function renderHeader(run) {
-  $('mode').textContent = modeLabel(run);
+  $('mode').textContent = modeLabel(run); renderBudget(run);
   $('start').disabled = !!run; $('start-live').hidden = !snapshot.liveEnabled; $('start-live').disabled = !!run;
-  $('badge').textContent = run ? `${snapshot.mode === 'local' ? 'LOCAL / MANUAL / NO AI' : 'LIVE'} / ${run.decisions}` : 'LOCAL / NO AI';
+  $('badge').textContent = badge(run);
   $('notice').textContent = run ? statusText(run) : 'אין סשן פעיל';
   if (run?.error) $('error').textContent = run.error;
 }
 function renderControls(run) {
   $('ask-budget').hidden = snapshot.mode !== 'local' || !run; $('ask-budget').disabled = run?.status !== 'running';
-  $('reconnect').hidden = snapshot.mode === 'local' || !run;
+  $('reconnect').hidden = snapshot.mode !== 'live' || !run;
   $('pause').disabled = !run || run.status !== 'running';
   $('resume').disabled = !run || run.status !== 'paused' || !snapshot.viewerReady;
   if (!replayData) $('trace').textContent = JSON.stringify(run || { message: 'No run yet' }, null, 2);
 }
+function showIdle() { view.disconnect(); $('empty').hidden = false; streamRun = undefined; }
 function renderStream(run) {
+  $('local-agent-view').hidden = snapshot.mode !== 'local-autonomous' || !activeRunId();
+  if (snapshot.mode === 'local-autonomous' && activeRunId()) { renderLocalAgent(run); return; }
   $('local-site').hidden = snapshot.mode !== 'local' || !activeRunId();
   if (snapshot.mode === 'local' && activeRunId()) { renderLocal(); return; }
-  if (!activeRunId()) { view.disconnect(); $('empty').hidden = false; streamRun = undefined; return; }
+  if (!activeRunId()) { showIdle(); return; }
   if (snapshot.streamAvailable && streamRun !== run.state.id) { streamRun = run.state.id; void view.connect(run.state.id); }
+}
+function renderLocalAgent(run) {
+  $('local-site').hidden = true;
+  if (frameBusy || run.status === 'starting') return;
+  const runId = run.state.id; const image = $('local-agent-view'); frameBusy = true;
+  image.onload = () => {
+    frameBusy = false;
+    if (activeRunId() !== runId || snapshot.mode !== 'local-autonomous') return;
+    $('empty').hidden = true;
+    if (frameReadyRun !== runId) { frameReadyRun = runId; void command('ready', { runId }); }
+  };
+  image.onerror = () => { frameBusy = false; };
+  image.src = `/api/local-frame?runId=${encodeURIComponent(runId)}&frame=${Date.now()}`;
 }
 async function poll() {
   if (pollBusy) return; pollBusy = true;
@@ -99,6 +129,7 @@ addEventListener('message', event => {
 });
 $('ask-budget').onclick = () => command('local-action', { action: 'ask:budget', revision: snapshot?.run?.state.revision });
 $('reconnect').onclick = () => { const id = activeRunId(); if (id) void view.connect(id); };
+$('start-autonomous').onclick = () => command('start-autonomous');
 $('start').onclick = () => command('start-local'); $('start-live').onclick = () => command('start'); $('stop').onclick = () => command('stop'); $('gate-stop').onclick = () => command('stop');
 $('pause').onclick = () => command('pause'); $('resume').onclick = () => command('resume'); $('reset').onclick = async () => { await command('reset'); replayData = undefined; };
 $('fullscreen').onclick = () => document.fullscreenElement ? document.exitFullscreen() : document.documentElement.requestFullscreen();

@@ -30,7 +30,7 @@ function reviewActions(s: StageState, page: StageObservation, stage: number): St
   return [{ id: `review:${current.id}`, description: 'All approved conditions match. Show final booking REVIEW only. Never reserve, pay or book.' }];
 }
 function needsCancellationQuestion(s: StageState, page: StageObservation): boolean {
-  return page.offers.some(o => !o.refundableFlight || !o.refundableHotel) && (s.requirements.cancellation.flight || s.requirements.cancellation.hotel);
+  return !s.cancellationChoice && page.offers.some(o => !o.refundableFlight || !o.refundableHotel) && (s.requirements.cancellation.flight || s.requirements.cancellation.hotel);
 }
 async function bounded<T>(task: Promise<T>, signal: AbortSignal, timeoutMs = 30000): Promise<T> {
   signal.throwIfAborted();

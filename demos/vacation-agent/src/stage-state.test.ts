@@ -56,3 +56,9 @@ test('accountant halves an odd approved budget exactly, including half a shekel'
   const s = createStage(); answerHuman(s, 'budget', { budgetNis: 5001 }); applyScenario(s, 'halve', 'halve-budget');
   assert.equal(s.requirements.budgetNis, 2500.5);
 });
+
+test('cancellation answers reject inherited object keys without changing state', () => {
+  const s = createStage();
+  for (const choice of ['toString', 'constructor']) assert.throws(() => answerHuman(s, 'cancellation', { choice }));
+  assert.equal(s.cancellationChoice, undefined); assert.doesNotThrow(() => structuredClone(s));
+});

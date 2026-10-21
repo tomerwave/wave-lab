@@ -2,11 +2,12 @@ import { createServer, type IncomingMessage, type ServerResponse } from 'node:ht
 import { readFile } from 'node:fs/promises';
 import { fileURLToPath } from 'node:url';
 import { resolve, sep } from 'node:path';
+import { LocalJevController } from './stage-local-jev.js';
 import { LocalStageController } from './stage-local.js';
 import { renderStageSite } from './stage-site.js';
 import { StageController } from './stage-controller.js';
 import type { ScenarioEvent } from './stage-state.js';
-export type StageServerOptions = { liveEnabled: boolean; createRun: () => StageController };
+export type StageServerOptions = { liveEnabled: boolean; createRun: () => StageController; autonomousEnabled?: boolean; createAutonomousRun?: () => LocalJevController; budgetSummary?: () => unknown };
 const webRoot = new URL('../web/', import.meta.url);
 const dcvRoot = fileURLToPath(new URL('./nice-dcv-web-client-sdk/dcvjs-esm/', import.meta.resolve('bedrock-agentcore/browser/live-view')));
 type Run = StageController | LocalStageController;
@@ -49,23 +50,37 @@ class StageHttp {
   }
   private async get(pathname: string, res: ServerResponse): Promise<void> {
     const api: Record<string, () => unknown> = {
-      '/api/state': () => ({ liveEnabled: this.options.liveEnabled, mode: this.current instanceof LocalStageController ? 'local' : 'live', run: this.current?.snapshot(), viewerReady: this.viewerReady, streamAvailable: this.streamAvailable() }),
+      '/api/state': () => ({ liveEnabled: this.options.liveEnabled, mode: this.mode(), autonomousEnabled: this.options.autonomousEnabled ?? false, budget: this.options.budgetSummary?.(), run: this.current?.snapshot(), viewerReady: this.viewerReady, streamAvailable: this.streamAvailable() }),
       '/api/local-page': () => this.current instanceof LocalStageController ? { ...this.current.page(), runId: this.current.state.id } : null,
       '/api/replay': () => ({ kind: 'recorded-transcript-not-live-ai', run: this.previous ?? this.current?.snapshot() ?? null }),
     };
     if (api[pathname]) { json(res, 200, api[pathname]()); return; }
-    if (pathname === '/api/live-view') { this.liveView(res); return; }
+    if (await this.viewRoute(pathname, res)) return;
     if (['/', '/dashboard.js', '/live-view.js', '/local-site', '/local-site.js'].includes(pathname)) return webAsset(pathname, res);
     if (pathname.startsWith('/dcv/')) return dcvAsset(pathname, res);
     json(res, 404, { error: 'Not found' });
   }
+  private async viewRoute(pathname: string, res: ServerResponse): Promise<boolean> {
+    if (pathname === '/api/local-frame') { await this.localFrame(res); return true; }
+    if (pathname === '/api/live-view') { this.liveView(res); return true; }
+    return false;
+  }
+  private mode(): string {
+    if (this.current instanceof LocalStageController) return 'local';
+    return this.current instanceof LocalJevController ? 'local-autonomous' : 'live';
+  }
+  private async localFrame(res: ServerResponse): Promise<void> {
+    if (!(this.current instanceof LocalJevController) || !this.activeView()) { json(res, 409, { error: 'No local agent browser' }); return; }
+    const frame = await this.current.frame(); res.setHeader('Content-Type', 'image/jpeg'); res.end(frame);
+  }
+  private activeView(): boolean { return !!this.current && ['paused', 'running', 'checkpoint', 'question', 'review'].includes(this.current.status); }
   private streamAvailable(): boolean { return !!this.current?.liveViewUrl && ['paused', 'running', 'checkpoint', 'question', 'review'].includes(this.current.status); }
   private liveView(res: ServerResponse): void {
     if (!this.streamAvailable()) { json(res, 409, { error: 'No live stream' }); return; }
     json(res, 200, { signedUrl: this.current!.liveViewUrl });
   }
   private async post(pathname: string, data: RequestData, res: ServerResponse): Promise<void> {
-    const starts: Record<string, () => Promise<void>> = { '/api/start': () => this.start(res), '/api/start-local': () => this.startLocal(res) };
+    const starts: Record<string, () => Promise<void>> = { '/api/start': () => this.start(res), '/api/start-local': () => this.startLocal(res), '/api/start-autonomous': () => this.startAutonomous(res) };
     if (starts[pathname]) return starts[pathname]();
     if (!this.current || data.runId !== this.current.state.id) { json(res, 409, { error: 'Missing or stale run ID' }); return; }
     if (pathname === '/api/stop') { await this.current.stop(); json(res, 200, { ok: true }); return; }
@@ -77,6 +92,13 @@ class StageHttp {
     if (this.current || this.changingRun) { json(res, 409, { error: 'Reset before starting another run' }); return; }
     this.changingRun = true;
     try { this.current = this.options.createRun(); await this.current.start(); this.current.pause(); await this.current.pump(); json(res, 200, { runId: this.current.state.id }); }
+    finally { this.changingRun = false; }
+  }
+  private async startAutonomous(res: ServerResponse): Promise<void> {
+    if (!this.options.autonomousEnabled || !this.options.createAutonomousRun) { json(res, 409, { error: 'Local paid Jev validation disabled' }); return; }
+    if (this.current || this.changingRun) { json(res, 409, { error: 'Reset before starting another run' }); return; }
+    this.changingRun = true;
+    try { this.current = this.options.createAutonomousRun(); await this.current.start(); this.current.pause(); await this.current.pump(); json(res, 200, { runId: this.current.state.id }); }
     finally { this.changingRun = false; }
   }
   private async startLocal(res: ServerResponse): Promise<void> {

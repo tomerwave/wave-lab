@@ -59,3 +59,17 @@ test('manual pause lets the in-flight tool finish and prevents another action', 
   await new Promise(r => setImmediate(r)); c.pause(); finish(); await running;
   assert.deepEqual([c.status, browser.actions.length], ['paused', 1]); await c.stop();
 });
+
+test('an explicit retain or compare answer resolves the current flash-offer question without waiving cancellation', async () => {
+  const { createStage, applyScenario, answerHuman } = await import('./stage-state.js');
+  const { stageActions } = await import('./stage-controller.js');
+  for (const choice of ['retain', 'compare']) {
+    const state = createStage(); applyScenario(state, 'flash', 'great-offer');
+    const page: StageObservation = { revision: state.revision, view: 'results', offers: offersFor(state) };
+    assert.ok(stageActions(state, page, 4).some(a => a.id === 'ask:cancellation'));
+    answerHuman(state, 'cancellation', { choice });
+    assert.ok(!stageActions(state, page, 4).some(a => a.id === 'ask:cancellation'));
+    assert.deepEqual(state.requirements.cancellation, { flight: true, hotel: true });
+    assert.ok(stageActions(state, page, 4).some(a => a.id === 'inspect:white'));
+  }
+});

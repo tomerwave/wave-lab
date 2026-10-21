@@ -30,3 +30,7 @@ export function loadStageConfig(): { port: number; liveEnabled: boolean } {
   if (!Number.isInteger(port) || port < 1024 || port > 65535) throw new Error('STAGE_PORT must be an integer from 1024 to 65535');
   return { port, liveEnabled: process.env.ALLOW_PAID_STAGE === '1' };
 }
+
+export function loadLocalJevConfig(): { enabled: boolean; ledgerPath: string } {
+  return { enabled: process.env.ALLOW_PAID_JEV_LOCAL === '1', ledgerPath: new URL('../../../.cache/jev-validation-2026-10-21.json', import.meta.url).pathname };
+}
