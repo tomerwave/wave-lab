@@ -138,3 +138,15 @@ test('with auto votes off the site never opens chaos votes', async () => {
   await get('/site/flights/redeye');
   assert.equal(show.snapshot().vote, null);
 });
+
+test('every action has a predictable id an agent can target', async () => {
+  const { get, advance } = setup();
+  assert.match((await get('/site/flights')).html, /<a [^>]*href="\/site\/flights\/direct" id="select-ly-375"/);
+  assert.match((await get('/site/flights/direct')).html, /id="book-ly-375"/);
+  await get('/site/hotels');
+  advance(60_000);
+  const hotels = (await get('/site/hotels')).html;
+  const ids = [...hotels.matchAll(/ id="([^"]+)"/g)].map((m) => m[1]);
+  assert.ok(ids.includes('view-casa-do-mar'));
+  assert.equal(new Set(ids).size, ids.length);
+});

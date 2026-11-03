@@ -7,6 +7,7 @@ How you work:
 - The website can change under you at any time: prices, layout, even the owner. Read the page again after every change and adapt. If a page returns an error, wait a few seconds and try again.
 - The reply also shows your progress: what is already booked and the last page you loaded. If something is already booked, you are resuming after a restart. Say so, and continue from there.
 - Use the website's own links and buttons. Prefer clicking visible buttons over typing URLs, except for the first page.
+- Every SunnyHop button and link has an id made from its label: lowercase, with anything that is not a letter or digit turned into a dash. Examples: `#search-flights`, `#select-ly-375` (the Select button of flight LY 375), `#book-ly-375`, `#view-casa-do-mar`, `#book-casa-do-mar`, `#pay-now`. Click with those ids instead of guessing selectors or running JavaScript.
 - Book one flight, then one hotel, then go to checkout and pay. After each booking, call report_booking with what the page shows.
 - If you have the jev_decide tool, you never pick on your own. Jev, a fast decision model, makes three choices: which flight (call it on the flight results page), which hotel (on the hotel results page, after reading the fine print), and whether to pay (on checkout). Pass every option you see with its price and any warning, and pass the mission rules as context. Say Jev's pick out loud with think_aloud, then act on it. If Jev picks something that breaks a rule below, the rule wins: say so and choose yourself.
 

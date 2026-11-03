@@ -5,6 +5,7 @@ import uuid
 from pathlib import Path
 
 import boto3
+from botocore.config import Config
 
 import config
 from output import say
@@ -78,6 +79,8 @@ BROWSER = {"type": "agentcore_browser", "name": "browser", "config": {"agentCore
 ALLOWED_TOOLS = ["@browser", "@show"]
 TOKENS_PER_REPLY = 2048
 TOKENS_PER_RUN = 40_000
+RUN_TIMEOUT_SECONDS = 1800
+STREAM = Config(read_timeout=RUN_TIMEOUT_SECONDS + 60, retries={"max_attempts": 1})
 
 
 def run_tools(settings: config.Settings) -> list:
@@ -93,7 +96,7 @@ def harness_config(settings: config.Settings) -> dict:
         "allowedTools": ALLOWED_TOOLS,
         "maxIterations": 80,
         "maxTokens": TOKENS_PER_RUN,
-        "timeoutSeconds": 1800,
+        "timeoutSeconds": RUN_TIMEOUT_SECONDS,
     }
 
 
@@ -173,7 +176,7 @@ def follow(settings: config.Settings, stream, model: str) -> None:
 def invoke(settings: config.Settings, model: str | None) -> None:
     if model and model not in (settings.model_id, settings.transplant_model_id):
         raise SystemExit(f"Model {model} is not allowed. Use {settings.model_id} or {settings.transplant_model_id}.")
-    data = boto3.client("bedrock-agentcore", region_name=settings.region)
+    data = boto3.client("bedrock-agentcore", region_name=settings.region, config=STREAM)
     extra = {"model": {"bedrockModelConfig": {"modelId": model, "maxTokens": TOKENS_PER_REPLY}}} if model else {}
     session = f"vacation-chaos-{uuid.uuid4()}"
     say(f"Session {session}")
