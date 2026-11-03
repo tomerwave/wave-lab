@@ -1,0 +1,114 @@
+import { test } from 'node:test';
+import assert from 'node:assert/strict';
+import { Show } from './engine.js';
+
+function harness() {
+  let now = 0;
+  const slept: number[] = [];
+  const show = new Show({ now: () => now, sleep: async (ms) => { slept.push(ms); }, random: () => 0 });
+  const advance = (ms: number) => { now += ms; show.tick(); };
+  const flush = () => new Promise((r) => setImmediate(r));
+  return { show, advance, slept, flush };
+}
+
+function finishOpening(h: ReturnType<typeof harness>) {
+  h.show.beginOpening();
+  h.advance(30_000);
+  h.advance(30_000);
+}
+
+test('castVote twice from one voter counts once', () => {
+  const { show } = harness();
+  show.beginOpening();
+  show.castVote('phone-1', 'Tokyo');
+  show.castVote('phone-1', 'Eilat');
+  const vote = show.snapshot().vote!;
+  assert.equal(vote.tally.Tokyo, 0);
+  assert.equal(vote.tally.Eilat, 1);
+  assert.equal(vote.total, 1);
+});
+
+test('closeVote with no votes picks the first option', () => {
+  const { show } = harness();
+  show.beginOpening();
+  assert.equal(show.closeVote(), 'Lisbon');
+  assert.equal(show.snapshot().mission.destination, 'Lisbon');
+});
+
+test('votes close by themselves after 30 seconds and the rule vote follows', () => {
+  const h = harness();
+  h.show.beginOpening();
+  h.show.castVote('a', 'Tokyo');
+  h.advance(30_000);
+  assert.equal(h.show.snapshot().mission.destination, 'Tokyo');
+  assert.equal(h.show.snapshot().vote?.target, 'rule');
+  h.advance(30_000);
+  assert.equal(h.show.snapshot().mission.ready, true);
+  assert.deepEqual(h.show.snapshot().mission.nevers, ['No red-eye flights']);
+});
+
+test('think blocks until opening votes finish', async () => {
+  const h = harness();
+  h.show.beginOpening();
+  let done = false;
+  const reply = h.show.think('Reading the mission.').then((r) => { done = true; return r; });
+  await h.flush();
+  assert.equal(done, false);
+  h.advance(30_000); h.advance(30_000);
+  const r = await reply;
+  assert.equal(r.mission.destination, 'Lisbon');
+});
+
+test('think blocks while a chaos vote is open then returns its inbox', async () => {
+  const h = harness();
+  finishOpening(h);
+  const vote = h.show.openVote('chaos');
+  let done = false;
+  const reply = h.show.think('Picking a flight.').then((r) => { done = true; return r; });
+  await h.flush();
+  assert.equal(done, false);
+  h.show.castVote('a', vote.options[1]!.id);
+  h.advance(30_000);
+  const r = await reply;
+  assert.equal(r.inbox.length, 1);
+  assert.equal(h.show.snapshot().applied.includes(vote.options[1]!.id), true);
+});
+
+test('story pace sleeps 2500ms per think, turbo 0', async () => {
+  const h = harness();
+  finishOpening(h);
+  await h.show.think('one');
+  h.show.setPace('turbo');
+  await h.show.think('two');
+  assert.deepEqual(h.slept, [2500, 0]);
+});
+
+test('chaos vote never offers an already applied twist', () => {
+  const h = harness();
+  finishOpening(h);
+  const first = h.show.openVote('chaos');
+  const winner = h.show.closeVote();
+  const second = h.show.openVote('chaos');
+  assert.equal(first.options.length, 3);
+  assert.ok(!second.options.some((o) => o.id === winner));
+});
+
+test('ask resolves when the presenter answers and can approve overspend', async () => {
+  const h = harness();
+  const answer = h.show.ask('Over budget by $200. OK?');
+  assert.equal(h.show.snapshot().pendingAsk, 'Over budget by $200. OK?');
+  h.show.answer('Yes, go.', true);
+  assert.equal(await answer, 'Yes, go.');
+  assert.equal(h.show.snapshot().approvedOverspend, true);
+  assert.equal(h.show.snapshot().pendingAsk, null);
+});
+
+test('checkpoints only move forward and reset clears the run', () => {
+  const h = harness();
+  h.show.checkpoint(5);
+  h.show.checkpoint(3);
+  assert.equal(h.show.snapshot().checkpoint, 5);
+  h.show.reset('replay');
+  assert.equal(h.show.snapshot().checkpoint, 0);
+  assert.equal(h.show.snapshot().runMode, 'replay');
+});
