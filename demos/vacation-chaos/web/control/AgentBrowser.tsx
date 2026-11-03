@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState, type RefObject } from 'react';
 import type { Snapshot } from '../../src/show/engine';
+import { liveBrowserLink } from './links';
 
 const MIRROR_WIDTH = 1280;
 const HOLD_MS = 700;
@@ -107,7 +108,9 @@ export function AgentBrowser({ snap }: { snap: Snapshot }) {
       <div className="flex items-center gap-3 border-b border-zinc-200 px-3 py-2">
         <span className="flex gap-1.5">{[0, 1, 2].map((i) => <i key={i} className="size-2.5 rounded-full bg-zinc-200" />)}</span>
         <span className="flex-1 truncate rounded-md bg-zinc-100 px-3 py-1 font-mono text-xs text-zinc-500">sunnyhop.demo{snap.route.replace(/^\/site/, '') || '/'}</span>
-        <span className="text-xs text-zinc-500">The agent's browser</span>
+        {snap.run
+          ? <a href={liveBrowserLink(snap.run)} target="_blank" rel="noreferrer" className="text-xs font-medium text-zinc-900 underline decoration-zinc-300 underline-offset-4 hover:decoration-zinc-900">Live view in AgentCore</a>
+          : <span className="text-xs text-zinc-500">The agent's browser</span>}
       </div>
       <div ref={box} className="relative min-h-0 flex-1 overflow-hidden">
         <iframe ref={frame} key={mirror.key} title="Agent browser mirror" src={mirror.src} className="absolute left-0 top-0 origin-top-left border-0" style={{ width: MIRROR_WIDTH, height, transform: `scale(${scale})` }} />
