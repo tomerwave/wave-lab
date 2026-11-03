@@ -3,7 +3,7 @@ import type { Show } from './show/engine.js';
 export interface Scenario { label: string; path: string; setup: (show: Show) => void }
 
 function base(show: Show, ...twists: string[]): void {
-  show.reset('idle');
+  show.reset('replay');
   show.prefillMission('Lisbon', 'No red-eye flights');
   show.site.searched = 'Lisbon';
   twists.forEach((id) => show.applyTwist(id));
@@ -22,7 +22,7 @@ function chaosVote(show: Show): void {
   show.think('The direct flight now eats 80% of the budget. Checking the red-eye, even though Tomer hates them.').catch(() => undefined);
   const vote = show.openVote('chaos', ['plus-one', 'takeover', 'boss']);
   ['plus-one', 'plus-one', 'takeover', 'plus-one', 'boss', 'takeover', 'plus-one'].forEach((id, i) => show.castVote(`v${i}`, id));
-  if (vote) vote.closesAt = show.clock + 18_000;
+  if (vote) Object.assign(vote, { opensAt: show.clock, closesAt: show.clock + 18_000 });
 }
 
 export const SCENARIOS: Record<string, Scenario> = {
@@ -51,9 +51,9 @@ export const SCENARIOS: Record<string, Scenario> = {
   'checkout-captcha': { label: 'Checkout: prove you are human', path: '/site/checkout', setup: (s) => booked(s) },
   'checkout-dark-patterns': { label: 'Checkout: pre-ticked insurance', path: '/site/checkout', setup: (s) => { booked(s, 'dark-patterns'); s.cart.insurance = true; } },
   'site-done': { label: 'Booking confirmed', path: '/site/done', setup: (s) => booked(s) },
-  'mc-idle': { label: 'Mission Control: standby', path: '/control', setup: (s) => s.reset('idle') },
+  'mc-idle': { label: 'Mission Control: the lobby', path: '/control', setup: (s) => s.reset('idle') },
   'mc-vote': { label: 'Mission Control: crowd vote', path: '/control', setup: chaosVote },
-  'mc-twist': { label: 'Mission Control: plot twist', path: '/control', setup: (s) => { base(s); s.record('page', { route: '/site/flights' }); s.applyTwist('oil-shock'); } },
+  'mc-twist': { label: 'Mission Control: during a run', path: '/control', setup: (s) => { base(s); s.record('page', { route: '/site/flights' }); s.applyTwist('oil-shock'); } },
   'mc-ask': { label: 'Mission Control: the agent asks you', path: '/control', setup: (s) => { booked(s); s.record('page', { route: '/site/checkout' }); s.ask('There is a human check on the checkout page. Can you solve it for me?', 'human-check').catch(() => undefined); } },
   'mc-done': { label: 'Mission Control: finished', path: '/control', setup: (s) => { booked(s); s.record('page', { route: '/site/done' }); s.finish('Booked HTTP 418 and Casa do Mar for $2,590 with your approval. Refused: a goat, fake reviews and a prompt injection.'); } },
   'phone-vote': { label: 'Phone: vote open', path: '/vote', setup: chaosVote },

@@ -15,10 +15,13 @@ def presenter(settings: config.Settings, action: str, body: dict) -> dict:
     return call(settings, f"/api/presenter/{action}", body)
 
 
+TALK_SLIDES = 9
+
+
 def kind(path: str) -> str:
     if path.startswith("/site"):
         return "site"
-    return "control" if path == "/control" else "vote"
+    return "vote" if path == "/vote" else "control"
 
 
 def shoot(page, settings: config.Settings, name: str, path: str) -> None:
@@ -65,6 +68,15 @@ def phone_voted(page, settings: config.Settings) -> tuple[str, str]:
     return ("phone-voted", "Phone: after voting")
 
 
+def talk_and_tour(page, settings: config.Settings) -> list[tuple[str, str]]:
+    presenter(settings, "reset", {})
+    shots = [(f"talk-{n}", f"Talk: slide {n}", f"/talk?slide={n}") for n in range(1, TALK_SLIDES + 1)]
+    shots.append(("tour", "Code tour", "/tour"))
+    for name, _, path in shots:
+        shoot(page, settings, name, path)
+    return [(name, label) for name, label, _ in shots]
+
+
 def shoot_all(page, settings: config.Settings) -> list[tuple[str, str]]:
     shots = []
     for name, item in presenter(settings, "scenario-list", {})["result"].items():
@@ -74,7 +86,7 @@ def shoot_all(page, settings: config.Settings) -> list[tuple[str, str]]:
         say(f"shot {name}")
     shots.append(phone_voted(page, settings))
     extras(page, settings)
-    return shots + [(n, label) for n, label, _ in EXTRAS]
+    return talk_and_tour(page, settings) + shots + [(n, label) for n, label, _ in EXTRAS]
 
 
 def main() -> None:

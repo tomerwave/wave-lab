@@ -8,17 +8,8 @@ export const HEADS_UP_MS = 6_000;
 export const THINK_DELAY: Record<Pace, number> = { story: 2500, turbo: 0 };
 export const SITE_DELAY: Record<Pace, number> = { story: 600, turbo: 0 };
 
-export const CHECKPOINTS = [
-  { label: 'Where?', kind: 'vote' }, { label: 'One rule', kind: 'vote' }, { label: 'Brief', kind: 'agent' },
-  { label: 'Flights', kind: 'agent' }, { label: 'Oil shock', kind: 'auto' }, { label: 'Twist', kind: 'vote' },
-  { label: 'Book flight', kind: 'agent' }, { label: 'Intern deploy', kind: 'auto' }, { label: 'Twist', kind: 'vote' },
-  { label: 'Hotel', kind: 'agent' }, { label: 'Twist', kind: 'vote' }, { label: 'Checkout', kind: 'agent' },
-  { label: 'Turbo', kind: 'finale' },
-] as const;
 
-const CHAOS_CHECKPOINTS = [5, 10];
-
-export type EventType = 'thought' | 'step' | 'page' | 'click' | 'booking' | 'twist' | 'vote' | 'checkpoint' | 'ask' | 'answer' | 'finish' | 'stopped' | 'pause' | 'telemetry' | 'reset';
+export type EventType = 'thought' | 'step' | 'page' | 'click' | 'booking' | 'twist' | 'vote' | 'ask' | 'answer' | 'finish' | 'stopped' | 'pause' | 'telemetry' | 'reset';
 export interface ShowEvent { seq: number; at: number; type: EventType; data: Record<string, unknown> }
 export type VoteTarget = 'destination' | 'rule' | 'chaos';
 export interface ActiveVote { id: string; target: VoteTarget; question: string; options: VoteOption[]; tally: Record<string, number>; total: number; opensAt: number; closesAt: number }
@@ -29,7 +20,7 @@ export interface Cart { insurance: boolean | null; haggle: Haggle | null }
 export interface ToolReply { mission: Mission; inbox: string[]; progress: { booked: Snapshot['booked']; lastPage: string } }
 
 export interface Snapshot {
-  runMode: RunMode; pace: Pace; pausedAt: number | null; checkpoint: number; mission: Mission; site: SiteMode; vote: ActiveVote | null;
+  runMode: RunMode; pace: Pace; pausedAt: number | null; mission: Mission; site: SiteMode; vote: ActiveVote | null;
   lastResult: { question: string; winner: string; total: number } | null;
   booked: { flight: Booking | null; hotel: Booking | null }; applied: string[]; route: string; lastClick: string | null;
   thought: string | null; pendingAsk: Ask | null; approvedOverspend: boolean; finished: string | null; stopped: string | null;
@@ -94,7 +85,7 @@ export class Show {
   reset(runMode: RunMode): void {
     const pace = this.state?.pace ?? 'story';
     this.state = {
-      runMode, pace, pausedAt: null, checkpoint: 0, mission: freshMission(this.startBudget), site: freshSite(), vote: null, lastResult: null,
+      runMode, pace, pausedAt: null, mission: freshMission(this.startBudget), site: freshSite(), vote: null, lastResult: null,
       booked: { flight: null, hotel: null }, applied: [], route: '/site', lastClick: null, thought: null,
       pendingAsk: null, approvedOverspend: false, finished: null, stopped: null,
       telemetry: { toolCalls: 0, inputTokens: 0, outputTokens: 0, latencyMs: 0, model: null },
@@ -164,7 +155,6 @@ export class Show {
   setRunMode(runMode: RunMode): void { this.state.runMode = runMode; this.changed(); }
 
   beginOpening(): void {
-    this.checkpoint(0);
     this.openVote('destination');
   }
 
@@ -184,7 +174,6 @@ export class Show {
     this.voters.clear();
     this.state.vote = vote;
     if (target === 'chaos') this.state.chaosVotes += 1;
-    if (target === 'chaos') this.checkpoint(CHAOS_CHECKPOINTS.find((i) => i > this.state.checkpoint) ?? 10);
     this.record('vote', { phase: 'open', target, options: options.map((o) => o.label) });
     return vote;
   }
@@ -232,12 +221,6 @@ export class Show {
     this.state.applied.push(id);
     this.inbox.push(twist.inbox);
     this.record('twist', { id, label: twist.label, blurb: twist.blurb, by });
-  }
-
-  checkpoint(index: number): void {
-    if (index <= this.state.checkpoint && this.state.events.some((e) => e.type === 'checkpoint')) return;
-    this.state.checkpoint = Math.min(index, CHECKPOINTS.length - 1);
-    this.record('checkpoint', { index: this.state.checkpoint, label: CHECKPOINTS[this.state.checkpoint]!.label });
   }
 
   record(type: EventType, data: Record<string, unknown>): void {
@@ -358,7 +341,6 @@ export class Show {
     if (target !== 'chaos') this.holdFor(SCREEN_MS.result);
     if (target === 'destination') {
       this.state.mission.destination = winner;
-      this.checkpoint(1);
       this.openVote('rule');
     } else if (target === 'rule') {
       this.applyRule(winner);
@@ -376,7 +358,6 @@ export class Show {
 
   private markReady(): void {
     this.state.mission.ready = true;
-    this.checkpoint(2);
     this.changed();
   }
 

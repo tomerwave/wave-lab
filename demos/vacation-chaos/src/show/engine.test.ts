@@ -107,16 +107,6 @@ test('ask resolves when the presenter answers and can approve overspend', async 
   assert.equal(h.show.snapshot().pendingAsk, null);
 });
 
-test('checkpoints only move forward and reset clears the run', () => {
-  const h = harness();
-  h.show.checkpoint(5);
-  h.show.checkpoint(3);
-  assert.equal(h.show.snapshot().checkpoint, 5);
-  h.show.reset('replay');
-  assert.equal(h.show.snapshot().checkpoint, 0);
-  assert.equal(h.show.snapshot().runMode, 'replay');
-});
-
 test('flight-only twists leave the pool once a flight is booked', () => {
   const h = harness();
   finishOpening(h);

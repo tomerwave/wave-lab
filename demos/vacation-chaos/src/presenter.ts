@@ -54,7 +54,6 @@ export const ACTIONS: Record<string, Action> = {
   pause: (show) => show.pause(),
   resume: (show) => show.resume(),
   twist: (show, b) => show.applyTwist(str(b.id) ?? ''),
-  checkpoint: (show, b) => show.checkpoint(Number(b.index)),
   budget: (show, b) => show.setBudget(Number(b.budget)),
   pace: (show, b) => show.setPace(b.pace === 'turbo' ? 'turbo' : 'story'),
   answer: (show, b) => show.answer(str(b.text) ?? 'OK', b.approve === true),

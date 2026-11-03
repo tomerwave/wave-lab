@@ -33,7 +33,6 @@ test('selecting a flight opens the first chaos vote', async () => {
   await get('/site/flights');
   await get('/site/flights/redeye');
   assert.equal(show.snapshot().vote?.target, 'chaos');
-  assert.equal(show.snapshot().checkpoint, 5);
 });
 
 test('hotels returns 503 with intern copy for 10s then 200', async () => {

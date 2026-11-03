@@ -32,7 +32,7 @@ export function Header({ snap }: { snap: Snapshot }) {
           <p className="text-[13px] text-zinc-500">The crowd books Tomer a vacation. An AI agent does the clicking.</p>
         </div>
       </div>
-      {live && <p className="text-base font-medium text-zinc-700">Live · {snap.mission.destination ? `Tomer to ${snap.mission.destination}` : 'Where is Tomer going?'}</p>}
+      {live && <p className="text-base font-medium text-zinc-700">{snap.runMode === 'replay' ? 'Scripted replay' : 'Live'} · {snap.mission.destination ? `Tomer to ${snap.mission.destination}` : 'Where is Tomer going?'}</p>}
     </header>
   );
 }
