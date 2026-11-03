@@ -46,6 +46,11 @@ const SKINS = {
   takeover: { name: 'PersiaHop', cls: 'skin-takeover', header: takeoverHeader },
 };
 
+function actionIndex(html: string): string {
+  const actions = [...html.matchAll(/ id="([^"]+)" data-label="([^"]+)"/g)].map(([, id, label]) => `#${id} (${label})`);
+  return `<nav class="sr-only" aria-label="Page actions">Page actions: ${[...new Set(actions)].join(', ')}</nav>`;
+}
+
 export function layout(ctx: PageContext, title: string, body: string): string {
   const skin = SKINS[ctx.site.skin];
   const name = skin.name;
@@ -54,7 +59,7 @@ export function layout(ctx: PageContext, title: string, body: string): string {
   const header = skin.header(ctx);
   return `<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>${esc(title)} · ${name}</title><link rel="stylesheet" href="/static/site.css"><script src="${script}" defer></script></head>
-<body class="${classes}">${header}${newsBar(ctx.site)}
+<body class="${classes}">${actionIndex(header + body)}${header}${newsBar(ctx.site)}
 <main class="wrap"><h1>${esc(title)}</h1>${body}</main>
 <footer class="wrap foot"><span>&copy; 2026 ${name} · Fictional demo. No real bookings or payments.</span><span class="egg">Certified: works on my machine</span></footer>${DUCK}</body></html>`;
 }

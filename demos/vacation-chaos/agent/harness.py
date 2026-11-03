@@ -80,6 +80,7 @@ ALLOWED_TOOLS = ["@browser", "@show"]
 TOKENS_PER_REPLY = 2048
 TOKENS_PER_RUN = 40_000
 RUN_TIMEOUT_SECONDS = 1800
+TRUNCATION = {"strategy": "sliding_window", "config": {"slidingWindow": {"messagesCount": 20}}}
 STREAM = Config(read_timeout=RUN_TIMEOUT_SECONDS + 60, retries={"max_attempts": 1})
 
 
@@ -94,6 +95,7 @@ def harness_config(settings: config.Settings) -> dict:
         "systemPrompt": [{"text": PROMPT}],
         "tools": [BROWSER],
         "allowedTools": ALLOWED_TOOLS,
+        "truncation": TRUNCATION,
         "maxIterations": 80,
         "maxTokens": TOKENS_PER_RUN,
         "timeoutSeconds": RUN_TIMEOUT_SECONDS,

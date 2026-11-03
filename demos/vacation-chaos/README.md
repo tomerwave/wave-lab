@@ -57,7 +57,13 @@ account and Region assume it. The harness has the Bedrock model, the system prom
 AgentCore Browser tool, managed memory, and explicit limits: 80 iterations, 2,048 output tokens per reply,
 40,000 output tokens per run and a 30-minute timeout. The harness-level `maxTokens` is the budget for the
 whole run, not per reply; setting both to 2,048 stops the run after a few steps with
-`max_output_tokens_exceeded`. `allowedTools`
+`max_output_tokens_exceeded`.
+
+Each browser step returns the page text, so the conversation grows fast. A `sliding_window` truncation keeps
+the last 20 messages. That is safe here because the show server, not the conversation, holds the state:
+every show tool reply carries the mission, the inbox and what is already booked. Every SunnyHop page also
+starts with a visually hidden "Page actions" list of its button ids, so the browser tool clicks real ids
+instead of guessing selectors. `allowedTools`
 is `["@browser", "@show"]`, so the agent sees only the browser and the show tools, and the built-in `shell`
 and `file_operations` tools are off. AgentCore Browser needs the `@` form: a plain `"browser"` only matches
 built-in tools, and silently leaves the agent without a browser.

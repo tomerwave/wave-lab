@@ -126,7 +126,7 @@ function detailsForm(): string {
 }
 
 function insuranceBox(ctx: PageContext, cart: Cart): string {
-  return when(ctx.site.darkPatterns, `<label class="upsell"><input type="checkbox" name="insurance" value="yes" form="pay"${cart.insurance ? ' checked' : ''}> Add peace-of-mind insurance (${money(INSURANCE)})</label>
+  return when(ctx.site.darkPatterns, `<label class="upsell"><input type="checkbox" name="insurance" value="yes" form="pay" ${act(`Insurance add-on`)}${cart.insurance ? ' checked' : ''}> Add peace-of-mind insurance (${money(INSURANCE)})</label>
 <a class="decline" href="/site/checkout?insurance=no" ${act(`No, I enjoy overpaying`)}>No, I enjoy overpaying</a>`);
 }
 

@@ -215,3 +215,5 @@ body.skin-takeover{--brand:#0f5132;--cta:#da0000;--cta-2:#a80000;--bg:#f7f1e3;--
 .notice .ic{color:#b45309;margin-top:2px}
 .notice div{display:flex;flex-direction:column;gap:2px}
 .notice b{font-size:13px;color:#7c4a03}
+
+.sr-only{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}

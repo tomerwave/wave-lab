@@ -150,3 +150,20 @@ test('every action has a predictable id an agent can target', async () => {
   assert.ok(ids.includes('view-casa-do-mar'));
   assert.equal(new Set(ids).size, ids.length);
 });
+
+test('each page lists its own action ids for agents and screen readers', async () => {
+  const { get } = setup();
+  const html = (await get('/site/flights')).html;
+  const index = /<nav class="sr-only" aria-label="Page actions">([^<]*)<\/nav>/.exec(html)?.[1] ?? '';
+  assert.match(index, /#select-ly-375 \(Select LY 375\)/);
+  assert.doesNotMatch(index, /#pay-now/);
+});
+
+test('a pre-ticked add-on is listed as an action so an agent can see and untick it', async () => {
+  const { show, get } = setup();
+  show.applyTwist('dark-patterns');
+  show.book('flight', 'LY 375', 640);
+  const html = (await get('/site/checkout')).html;
+  assert.match(html, /<input type="checkbox" name="insurance" value="yes" form="pay" id="insurance-add-on"[^>]* checked>/);
+  assert.match(html, /Page actions: [^<]*#insurance-add-on \(Insurance add-on\)[^<]*#no-i-enjoy-overpaying/);
+});
