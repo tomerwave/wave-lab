@@ -17,6 +17,7 @@ import { handleSite } from './site/handler.js';
 import { GOAT_CELLS } from './site/pages.js';
 
 const PUBLIC = fileURLToPath(new URL('../public/', import.meta.url));
+const APP = fileURLToPath(new URL('../dist/web/', import.meta.url));
 type Handler = (req: IncomingMessage, res: ServerResponse, url: URL) => Promise<void> | void;
 
 function streamEvents(show: Show, req: IncomingMessage, res: ServerResponse): void {
@@ -33,9 +34,9 @@ function publicState(show: Show) {
   return { vote: s.vote, lastResult: s.lastResult, runMode: s.runMode, thought: s.thought, finished: s.finished !== null, serverNow: Date.now() };
 }
 
-async function serveStatic(res: ServerResponse, path: string): Promise<void> {
-  const file = normalize(join(PUBLIC, path));
-  if (!file.startsWith(PUBLIC)) return send(res, 404, 'Not found');
+async function serveStatic(res: ServerResponse, root: string, path: string): Promise<void> {
+  const file = normalize(join(root, path));
+  if (!file.startsWith(root)) return send(res, 404, 'Not found');
   const body = await readFile(file).catch(() => null);
   if (!body) return send(res, 404, 'Not found');
   res.writeHead(200, { 'content-type': CONTENT_TYPES[extname(file)] ?? 'application/octet-stream', 'cache-control': 'no-cache' });
@@ -105,7 +106,8 @@ export function createShowServer(show: Show, config: ShowConfig, launcher = new 
     [/^\/api\/presenter\/[\w-]+$/, (req, res, url) => (authed(req) ? presenter({ show, launcher }, req, res, url.pathname.split('/').pop()!) : sendJson(res, 401, { error: 'presenter key required' }))],
     [/^\/api\/telemetry$/, async (req, res) => { if (!authed(req)) return sendJson(res, 401, {}); show.addTelemetry(await readJson(req)); sendJson(res, 200, {}); }],
     [/^\/qr\.svg$/, async (_q, res) => send(res, 200, await QRCode.toString(`${config.publicUrl}/vote`, { type: 'svg', margin: 0, color: { dark: '#2b3138', light: '#faf6ef' } }), { type: 'image/svg+xml' })],
-    [/^\/static\//, (_q, res, url) => serveStatic(res, url.pathname.slice('/static/'.length))],
+    [/^\/static\//, (_q, res, url) => serveStatic(res, PUBLIC, url.pathname.slice('/static/'.length))],
+    [/^\/app\//, (_q, res, url) => serveStatic(res, APP, url.pathname.slice('/app/'.length))],
     [/^\/site(\/|$)/, (req, res, url) => site(show, req, res, url)],
     [/^\/mcp$/, async (req, res) => {
       const status = mcpAllowed(show, req, config.presenterKey);

@@ -10,7 +10,7 @@ bookings, no real card, no real money.
 
 | Screen | URL | Who sees it |
 | --- | --- | --- |
-| Mission Control | `/control` | The projector. Open the **Start the show** link that `npm start` prints to get the **Start** button. |
+| Mission Control | `/control` | The projector. A React and Tailwind app in `web/control/`, built by Vite into `dist/web` when you run `npm start`. Open the **Start the show** link that `npm start` prints to get the **Start** button. |
 | Phone vote | `/vote` | The audience, through the QR code. |
 | SunnyHop | `/site` | The agent's browser. Mission Control shows a mirror of it. |
 

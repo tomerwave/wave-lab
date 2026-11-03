@@ -17,7 +17,7 @@ export const CHECKPOINTS = [
 const CHAOS_CHECKPOINTS = [5, 8, 10];
 
 export type EventType = 'thought' | 'step' | 'page' | 'click' | 'booking' | 'twist' | 'vote' | 'checkpoint' | 'ask' | 'answer' | 'finish' | 'stopped' | 'telemetry' | 'reset';
-export interface ShowEvent { at: number; type: EventType; data: Record<string, unknown> }
+export interface ShowEvent { seq: number; at: number; type: EventType; data: Record<string, unknown> }
 export type VoteTarget = 'destination' | 'rule' | 'chaos';
 export interface ActiveVote { id: string; target: VoteTarget; question: string; options: VoteOption[]; tally: Record<string, number>; total: number; closesAt: number }
 export interface Booking { label: string; price: number }
@@ -56,6 +56,7 @@ export class Show {
   private pendingAnswer: { promise: Promise<string>; resolve: (text: string) => void; reject: (e: Error) => void } | null = null;
   private autoVotesOn = true;
   private token: string | null = null;
+  private seq = 0;
   lastWinners: string[] = [];
 
   constructor(opts: ShowOptions = {}) {
@@ -215,7 +216,7 @@ export class Show {
   }
 
   record(type: EventType, data: Record<string, unknown>): void {
-    this.state.events.push({ at: this.now(), type, data });
+    this.state.events.push({ seq: ++this.seq, at: this.now(), type, data });
     if (this.state.events.length > 400) this.state.events.splice(0, 100);
     if (type === 'page') this.state.route = String(data.route);
     if (type === 'click') this.state.lastClick = String(data.label);

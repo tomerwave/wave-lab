@@ -1,0 +1,23 @@
+@import "tailwindcss";
+
+@theme {
+  --font-sans: "Inter", -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", system-ui, sans-serif;
+  --animate-rise: rise 0.45s ease-out;
+  --animate-shake: shake 0.35s;
+  --animate-blink: blink 1.6s infinite;
+
+  @keyframes rise {
+    from { transform: translateY(14px); opacity: 0; }
+    to { transform: none; opacity: 1; }
+  }
+  @keyframes shake {
+    25% { transform: translateX(-6px); }
+    75% { transform: translateX(6px); }
+  }
+  @keyframes blink {
+    50% { opacity: 0.35; }
+  }
+}
+
+html, body, #root { height: 100%; }
+body { @apply overflow-hidden bg-zinc-50 text-zinc-950 antialiased; min-width: 1200px; }
