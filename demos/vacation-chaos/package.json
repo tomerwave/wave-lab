@@ -4,7 +4,7 @@
   "description": "Crowd-driven live agent demo: an agent books a vacation while the audience votes for chaos.",
   "scripts": {
     "start": "node --import tsx src/main.ts",
-    "tunnel": "cloudflared tunnel --url http://localhost:4545",
+    "tunnel": "cloudflared tunnel --no-autoupdate --url http://localhost:4545",
     "build": "tsc",
     "typecheck": "tsc --noEmit",
     "test": "node --import tsx --test src/*.test.ts src/**/*.test.ts"
