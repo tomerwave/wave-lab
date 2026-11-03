@@ -1,6 +1,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { HEADS_UP_MS, Show, VOTE_MS } from './engine.js';
+import { SCREEN_MS } from './types.js';
 
 const WHOLE_VOTE = HEADS_UP_MS + VOTE_MS;
 
@@ -79,6 +80,7 @@ test('think blocks while a chaos vote is open then returns its inbox', async () 
 test('story pace sleeps 2500ms per think, turbo 0', async () => {
   const h = harness();
   finishOpening(h);
+  h.advance(60_000);
   await h.show.think('one');
   h.show.setPace('turbo');
   await h.show.think('two');
@@ -202,4 +204,26 @@ test('a twist event says whether the crowd chose it', () => {
   h.show.applyTwist('oil-shock');
   const twists = h.show.snapshot().events.filter((e) => e.type === 'twist').map((e) => e.data);
   assert.deepEqual(twists.map((t) => [t.id, t.by]), [['heatwave', 'crowd'], ['oil-shock', 'world']]);
+});
+
+test('the agent waits while Mission Control shows a twist, then gets on with it', async () => {
+  const h = harness();
+  finishOpening(h);
+  h.advance(60_000);
+  h.show.applyTwist('oil-shock');
+  await h.show.think('prices tripled');
+  assert.deepEqual(h.slept, [SCREEN_MS.twist + SCREEN_MS.rest, 2500]);
+});
+
+test('pause freezes the vote clock and the agent until resume', async () => {
+  const h = harness();
+  h.show.beginOpening();
+  h.show.pause();
+  h.advance(WHOLE_VOTE * 2);
+  assert.equal(h.show.snapshot().vote?.target, 'destination');
+  h.show.resume();
+  h.advance(WHOLE_VOTE - 1);
+  assert.equal(h.show.snapshot().vote?.target, 'destination');
+  h.advance(1);
+  assert.equal(h.show.snapshot().vote?.target, 'rule');
 });

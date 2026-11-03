@@ -1,6 +1,6 @@
 import { randomUUID } from 'node:crypto';
 import { CHAOS_POOL, DESTINATIONS, RULES, TWISTS } from './twists.js';
-import { START_BUDGET, freshMission, freshSite, type Ask, type AskKind, type Mission, type Pace, type RunMode, type SiteMode, type VoteOption } from './types.js';
+import { SCREEN_MS, START_BUDGET, freshMission, freshSite, type Ask, type AskKind, type Mission, type Pace, type RunMode, type SiteMode, type VoteOption } from './types.js';
 
 export const VOTE_MS = 30_000;
 export const HEADS_UP_MS = 6_000;
@@ -17,18 +17,18 @@ export const CHECKPOINTS = [
 
 const CHAOS_CHECKPOINTS = [5, 10];
 
-export type EventType = 'thought' | 'step' | 'page' | 'click' | 'booking' | 'twist' | 'vote' | 'checkpoint' | 'ask' | 'answer' | 'finish' | 'stopped' | 'telemetry' | 'reset';
+export type EventType = 'thought' | 'step' | 'page' | 'click' | 'booking' | 'twist' | 'vote' | 'checkpoint' | 'ask' | 'answer' | 'finish' | 'stopped' | 'pause' | 'telemetry' | 'reset';
 export interface ShowEvent { seq: number; at: number; type: EventType; data: Record<string, unknown> }
 export type VoteTarget = 'destination' | 'rule' | 'chaos';
 export interface ActiveVote { id: string; target: VoteTarget; question: string; options: VoteOption[]; tally: Record<string, number>; total: number; opensAt: number; closesAt: number }
-export interface Booking { label: string; price: number }
+export interface Booking { label: string; price: number; ref?: string }
 export interface Telemetry { toolCalls: number; inputTokens: number; outputTokens: number; latencyMs: number; model: string | null }
 export interface Haggle { hotelId: string; offer: number; accepted: boolean; reply: string }
 export interface Cart { insurance: boolean | null; haggle: Haggle | null }
 export interface ToolReply { mission: Mission; inbox: string[]; progress: { booked: Snapshot['booked']; lastPage: string } }
 
 export interface Snapshot {
-  runMode: RunMode; pace: Pace; checkpoint: number; mission: Mission; site: SiteMode; vote: ActiveVote | null;
+  runMode: RunMode; pace: Pace; pausedAt: number | null; checkpoint: number; mission: Mission; site: SiteMode; vote: ActiveVote | null;
   lastResult: { question: string; winner: string; total: number } | null;
   booked: { flight: Booking | null; hotel: Booking | null }; applied: string[]; route: string; lastClick: string | null;
   thought: string | null; pendingAsk: Ask | null; approvedOverspend: boolean; finished: string | null; stopped: string | null;
@@ -58,6 +58,7 @@ export class Show {
   private autoVotesOn = true;
   private token: string | null = null;
   private seq = 0;
+  private holdUntil = 0;
   lastWinners: string[] = [];
 
   constructor(opts: ShowOptions = {}) {
@@ -92,7 +93,7 @@ export class Show {
   reset(runMode: RunMode): void {
     const pace = this.state?.pace ?? 'story';
     this.state = {
-      runMode, pace, checkpoint: 0, mission: freshMission(this.startBudget), site: freshSite(), vote: null, lastResult: null,
+      runMode, pace, pausedAt: null, checkpoint: 0, mission: freshMission(this.startBudget), site: freshSite(), vote: null, lastResult: null,
       booked: { flight: null, hotel: null }, applied: [], route: '/site', lastClick: null, thought: null,
       pendingAsk: null, approvedOverspend: false, finished: null, stopped: null,
       telemetry: { toolCalls: 0, inputTokens: 0, outputTokens: 0, latencyMs: 0, model: null },
@@ -102,6 +103,7 @@ export class Show {
     this.inbox = [];
     this.autoVotesOn = true;
     this.token = null;
+    this.holdUntil = 0;
     this.endRun();
     this.record('reset', { runMode });
   }
@@ -124,6 +126,26 @@ export class Show {
   }
 
   setPace(pace: Pace): void { this.state.pace = pace; this.changed(); }
+
+  pause(): void {
+    if (this.state.pausedAt !== null) return;
+    this.state.pausedAt = this.now();
+    this.record('pause', { paused: true });
+  }
+
+  resume(): void {
+    if (this.state.pausedAt === null) return;
+    const pausedFor = this.now() - this.state.pausedAt;
+    if (this.state.vote) this.state.vote.closesAt += pausedFor;
+    this.holdUntil += pausedFor;
+    this.state.pausedAt = null;
+    this.record('pause', { paused: false });
+  }
+
+  private holdFor(ms: number): void {
+    if (this.state.pace === 'turbo') return;
+    this.holdUntil = Math.max(this.holdUntil, this.now()) + ms + SCREEN_MS.rest;
+  }
 
   setBudget(budget: number): void {
     if (!Number.isInteger(budget) || budget < 100 || budget > 100_000 || this.state.mission.ready) return;
@@ -194,7 +216,7 @@ export class Show {
 
   tick(): void {
     try {
-      if (this.state.vote && this.now() >= this.state.vote.closesAt) this.closeVote();
+      if (this.state.vote && this.state.pausedAt === null && this.now() >= this.state.vote.closesAt) this.closeVote();
     } catch (error) {
       this.state.vote = null;
       this.record('step', { kind: 'Error', text: error instanceof Error ? error.message : 'vote failed' });
@@ -204,7 +226,8 @@ export class Show {
   applyTwist(id: string, by: 'crowd' | 'world' = 'world'): void {
     const twist = TWISTS[id];
     if (!twist || this.state.applied.includes(id)) return;
-    twist.apply(this.state.mission, this.state.site, this.now());
+    this.holdFor(SCREEN_MS.twist);
+    twist.apply(this.state.mission, this.state.site, Math.max(this.now(), this.holdUntil));
     this.state.applied.push(id);
     this.inbox.push(twist.inbox);
     this.record('twist', { id, label: twist.label, blurb: twist.blurb, by });
@@ -256,9 +279,10 @@ export class Show {
     this.pendingAnswer = null;
   }
 
-  book(item: 'flight' | 'hotel', label: string, price: number): void {
-    this.state.booked[item] = { label, price };
-    this.record('booking', { item, label, price });
+  book(item: 'flight' | 'hotel', label: string, price: number, ref?: string): void {
+    this.state.booked[item] = { label, price, ref };
+    this.record('booking', { item, label, price, ref });
+    this.holdFor(SCREEN_MS.booking);
   }
 
   agentStopped(reason: string): void {
@@ -287,7 +311,13 @@ export class Show {
   }
 
   async waitUntilFree(): Promise<void> {
-    while (!this.state.mission.ready || this.state.vote) await new Promise<void>((resolve, reject) => this.waiters.push({ resolve, reject }));
+    while (!this.state.mission.ready || this.state.vote || this.state.pausedAt !== null) await new Promise<void>((resolve, reject) => this.waiters.push({ resolve, reject }));
+    await this.waitForScreen();
+  }
+
+  async waitForScreen(): Promise<void> {
+    const held = this.holdUntil - this.now();
+    if (held > 0) await this.sleep(held);
   }
 
   private async reply(delayMs: number): Promise<ToolReply> {
@@ -317,6 +347,7 @@ export class Show {
   }
 
   private resolveVote(target: VoteTarget, winner: string): void {
+    if (target !== 'chaos') this.holdFor(SCREEN_MS.result);
     if (target === 'destination') {
       this.state.mission.destination = winner;
       this.checkpoint(1);

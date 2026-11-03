@@ -1,13 +1,14 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { Show } from '../show/engine.js';
+import { SITE_DELAY, Show } from '../show/engine.js';
 import { handleSite, type SiteRequest } from './handler.js';
+import { SCREEN_MS } from '../show/types.js';
 
 const emoji = /\p{Extended_Pictographic}/u;
 
 function setup() {
   let now = 0;
-  const show = new Show({ now: () => now, sleep: () => Promise.resolve(), random: () => 0 });
+  const show = new Show({ now: () => now, sleep: async (ms) => { now += ms; }, random: () => 0 });
   show.prefillMission('Lisbon', 'No red-eye flights');
   const get = (url: string, mirror = false) => {
     const [path = url, search = ''] = url.split('?');
@@ -213,4 +214,12 @@ test('two crowd twists at most: after the outage the hotel list stays calm, the 
   show.closeVote();
   await get('/site/hotels/inn');
   assert.equal(show.snapshot().vote, null);
+});
+
+test('the agent page that sets off a twist waits until Mission Control has shown it', async () => {
+  const slept: number[] = [];
+  const show = new Show({ now: () => 0, sleep: async (ms) => { slept.push(ms); }, random: () => 0 });
+  show.prefillMission('Lisbon', null);
+  await handleSite(show, { method: 'GET', path: '/site/flights', form: {}, mirror: false });
+  assert.deepEqual(slept, [SITE_DELAY.story, SCREEN_MS.twist + SCREEN_MS.rest]);
 });

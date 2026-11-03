@@ -14,6 +14,7 @@ export async function handleSite(show: Show, req: SiteRequest): Promise<SiteResp
   if (!req.mirror) {
     beforeRequest(show, req);
     await show.sitePause();
+    await show.waitForScreen();
   }
   const ctx: PageContext = { mission: show.mission, site: show.site, mirror: req.mirror, step: stepOf(req.path) };
   const res = route(show, req, ctx);
@@ -56,7 +57,7 @@ function flights({ show, req, ctx, id, action }: Route): SiteResponse {
   if (!flight) return ok(flightsPage(ctx));
   if (action !== 'book' || !writable(req)) return ok(flightDetail(ctx, flight));
   if (show.site.flightCancelled && flight.id === 'direct') return { status: 409, html: messagePage(ctx, 'Flight cancelled', 'This flight was cancelled because of the strike. Pick another one.', '/site/flights') };
-  show.book('flight', `${flight.code} · ${flight.times}`, flightPrice(flight, show.mission, show.site));
+  show.book('flight', `${flight.code} · ${flight.times}`, flightPrice(flight, show.mission, show.site), flight.id);
   return redirect('/site/hotels');
 }
 
@@ -74,7 +75,7 @@ function hotelRoute({ show, req, ctx, id, action }: Route): SiteResponse {
   if (!hotel) return ok(hotelsPage(ctx));
   if (action === 'haggle' && writable(req)) return haggle(show, hotel, Number(req.form.offer), ctx);
   if (action !== 'book' || !writable(req)) return ok(hotelDetail(ctx, hotel, show.cart));
-  show.book('hotel', hotel.name, currentHotelPrice(show, hotel));
+  show.book('hotel', hotel.name, currentHotelPrice(show, hotel), hotel.id);
   return redirect('/site/checkout');
 }
 

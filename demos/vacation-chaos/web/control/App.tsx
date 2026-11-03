@@ -4,8 +4,18 @@ import { AgentBrowser } from './AgentBrowser';
 import { Header, Sidebar, Telemetry } from './Dashboard';
 import { useMoments } from './moments';
 import { isPresenter } from './presenter';
-import { useNow, useShow, type Live } from './show';
+import { useNow, useShow, type Live, type Wire } from './show';
 import { Stage } from './Stage';
+import { HeadsUpBanner, PausedBanner, VotePanel } from './Vote';
+
+function Overlays({ snap, serverNow }: { snap: Wire; serverNow: number }) {
+  const { vote, pendingAsk, pausedAt } = snap;
+  const paused = pausedAt !== null;
+  if (pendingAsk) return <AskPanel ask={pendingAsk} />;
+  if (vote && serverNow < vote.opensAt) return <HeadsUpBanner vote={vote} serverNow={serverNow} />;
+  if (vote) return <VotePanel vote={vote} serverNow={pausedAt ?? serverNow} paused={paused} />;
+  return paused ? <PausedBanner /> : null;
+}
 
 function Show({ live: { snap, offset } }: { live: Live }) {
   const now = useNow(250);
@@ -18,8 +28,8 @@ function Show({ live: { snap, offset } }: { live: Live }) {
         <Sidebar snap={snap} />
       </main>
       <Telemetry snap={snap} />
-      <Stage snap={snap} moment={moment} serverNow={now + offset} />
-      {snap.pendingAsk && <AskPanel ask={snap.pendingAsk} />}
+      <Stage snap={snap} moment={moment} />
+      <Overlays snap={snap} serverNow={now + offset} />
       {isPresenter && <Backstage />}
     </div>
   );

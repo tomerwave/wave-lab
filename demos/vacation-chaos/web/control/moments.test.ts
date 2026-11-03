@@ -31,8 +31,8 @@ test('moments are spaced out with a breather so the crowd can watch the agent', 
   show.book('hotel', 'Casa do Mar', 900);
   const now = step(0);
   assert.equal(advance(state, now, now)?.title, 'LY 375');
-  assert.equal(advance(state, now + 3_600, now + 3_600), null);
-  assert.equal(advance(state, now + 6_700, now + 6_700)?.title, 'Casa do Mar');
+  assert.equal(advance(state, now + 4_500, now + 4_500), null);
+  assert.equal(advance(state, now + 7_600, now + 7_600)?.title, 'Casa do Mar');
 });
 
 test('the destination result is a postcard with the city in its own voice', () => {

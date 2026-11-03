@@ -32,7 +32,7 @@ export function Backstage() {
         <Action onClick={run('reset')}>Stop and go back to the lobby</Action>
       </Group>
       <Group title="Pace"><Action onClick={run('pace', { pace: 'story' })}>Storytelling</Action><Action onClick={run('pace', { pace: 'turbo' })}>Turbo</Action></Group>
-      <Group title="Crowd"><Action onClick={run('vote')}>Open a vote</Action><Action onClick={run('close-vote')}>Close vote now</Action><Action onClick={run('extend-vote')}>Extend 15s</Action></Group>
+      <Group title="Crowd"><Action onClick={run('pause')}>Pause</Action><Action onClick={run('resume')}>Resume</Action><Action onClick={run('vote')}>Open a vote</Action><Action onClick={run('close-vote')}>Close vote now</Action><Action onClick={run('extend-vote')}>Extend 15s</Action></Group>
       <Group title="Fire a twist now">{meta.twists.map((t) => <Action key={t.id} onClick={run('twist', { id: t.id })}>{t.label}</Action>)}</Group>
     </div>
   );

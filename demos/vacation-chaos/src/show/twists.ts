@@ -145,8 +145,10 @@ export const POSTCARDS: Record<string, Postcard> = {
   Cheapest: { photo: 'city-tropical', headline: 'Wherever is cheapest. Bold.', lines: ['The algorithm is in charge now.', 'What could possibly go wrong?'] },
 };
 
-export const RULE_QUIPS: Record<string, string> = {
-  'No red-eye flights': 'Tomer needs his eight hours. And his pillow. And his playlist.',
-  'Must have a pool': 'Non-negotiable. Ask his mother.',
-  "Near a McDonald's": 'For cultural research. Obviously.',
+export interface RuleCard { quip: string; lines: string[] }
+
+export const RULE_CARDS: Record<string, RuleCard> = {
+  'No red-eye flights': { quip: 'Tomer needs his eight hours. And his pillow. And his playlist.', lines: ['DO NOT DISTURB', 'Nothing takes off before 06:00', 'Room service: decaf only'] },
+  'Must have a pool': { quip: 'Non-negotiable. Ask his mother.', lines: ['Mom: a pool, yes?', 'Mom: with a lifeguard', 'Mom: and you call me when you land'] },
+  "Near a McDonald's": { quip: 'For cultural research. Obviously.', lines: ['1 x Big Mac|$5.99', '1 x Large fries|$3.49', '1 x Cultural research|priceless', 'Walking distance|non-negotiable', 'TOTAL|his dignity'] },
 };

@@ -1,18 +1,15 @@
 import { useEffect, useRef, useState } from 'react';
 import type { ShowEvent, Snapshot } from '../../src/show/engine';
-import { POSTCARDS, RULE_QUIPS, TWISTS } from '../../src/show/twists';
+import { POSTCARDS, RULE_CARDS, TWISTS } from '../../src/show/twists';
+import { SCREEN_MS } from '../../src/show/types';
 import { money } from './format';
 
-export type Look = 'news' | 'message' | 'alert' | 'status' | 'post' | 'postcard' | 'rule' | 'booking';
+export type Look = 'news' | 'message' | 'alert' | 'status' | 'post' | 'postcard' | 'rule' | 'flight' | 'hotel';
 
 export interface Moment { look: Look; ref: string; kicker: string; title: string; text: string; foot: string; at: number; ms: number }
 
 export interface Moments { seen: number | null; queue: Moment[]; current: Moment | null; until: number; restUntil: number }
 
-const MOMENT_MS = 5000;
-const TWIST_MS = 8000;
-const BOOKING_MS = 3500;
-const REST_MS = 3000;
 const STALE_MS = 30000;
 const BACK = 'Back to the agent';
 
@@ -26,18 +23,18 @@ export function freshEvents(state: Moments, events: ShowEvent[]): ShowEvent[] {
 
 function voteMoment(e: ShowEvent): Moment {
   const { target, winner, winnerId, total } = e.data as Record<string, string>;
-  const base = { ref: winnerId, title: winner, at: e.at, ms: MOMENT_MS };
+  const base = { ref: winnerId, title: winner, at: e.at, ms: SCREEN_MS.result };
   const kicker = (fallback: string) => (Number(total) === 0 ? 'Nobody voted, so the universe chose' : fallback);
   if (target === 'destination') {
-    return { ...base, look: 'postcard', kicker: kicker('Tomer is going to'), text: POSTCARDS[winnerId]?.headline ?? '', foot: 'Next: his one rule', ms: TWIST_MS };
+    return { ...base, look: 'postcard', kicker: kicker('Tomer is going to'), text: POSTCARDS[winnerId]?.headline ?? '', foot: 'Next: his one rule', ms: SCREEN_MS.twist };
   }
-  return { ...base, look: 'rule', kicker: kicker('His one rule'), text: RULE_QUIPS[winnerId] ?? '', foot: BACK };
+  return { ...base, look: 'rule', kicker: kicker('His one rule'), text: RULE_CARDS[winnerId]?.quip ?? '', foot: BACK };
 }
 
 function bookingMoment(e: ShowEvent): Moment | null {
-  const { item, label, price } = e.data as { item: string; label: string; price: number };
-  if (item === 'trip') return null;
-  return { look: 'booking', ref: item, kicker: `The agent booked the ${item}`, title: label, text: money(price), foot: BACK, at: e.at, ms: BOOKING_MS };
+  const { item, label, price, ref } = e.data as { item: string; label: string; price: number; ref?: string };
+  if (item !== 'flight' && item !== 'hotel') return null;
+  return { look: item, ref: ref ?? '', kicker: `The agent booked the ${item}`, title: label, text: money(price), foot: BACK, at: e.at, ms: SCREEN_MS.booking };
 }
 
 function twistMoment(state: Moments, e: ShowEvent): void {
@@ -45,7 +42,7 @@ function twistMoment(state: Moments, e: ShowEvent): void {
   const twist = TWISTS[id];
   if (!twist) return;
   const foot = by === 'crowd' ? `Chosen by the crowd: ${label}` : BACK;
-  state.queue.push({ look: twist.look, ref: id, kicker: twist.kicker, title: twist.headline, text: twist.effect, foot, at: e.at, ms: TWIST_MS });
+  state.queue.push({ look: twist.look, ref: id, kicker: twist.kicker, title: twist.headline, text: twist.effect, foot, at: e.at, ms: SCREEN_MS.twist });
 }
 
 const BUILDERS: Partial<Record<ShowEvent['type'], (state: Moments, e: ShowEvent) => void>> = {
@@ -61,7 +58,7 @@ export function absorb(state: Moments, s: Snapshot): void {
 
 export function advance(state: Moments, localNow: number, serverNow: number): Moment | null {
   if (state.current && localNow < state.until) return state.current;
-  if (state.current) Object.assign(state, { current: null, restUntil: localNow + REST_MS });
+  if (state.current) Object.assign(state, { current: null, restUntil: localNow + SCREEN_MS.rest });
   if (localNow < state.restUntil) return null;
   state.queue = state.queue.filter((m) => serverNow - m.at < STALE_MS);
   state.current = state.queue.shift() ?? null;
