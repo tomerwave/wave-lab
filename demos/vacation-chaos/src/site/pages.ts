@@ -1,5 +1,5 @@
 import type { Cart } from '../show/engine.js';
-import { GOAT, ICONS, airlineMark, cityPhoto, gallery, hotelPhoto } from './art.js';
+import { GOAT, ICONS, airlineMark, cityPhoto, gallery, hotelPhoto, mapCard } from './art.js';
 import { FLIGHTS, HOTELS, city, flightPrice, hotelPrice, money, type Flight, type Hotel } from './inventory.js';
 import { esc, layout, type PageContext } from './layout.js';
 
@@ -12,7 +12,7 @@ export function searchPage(ctx: PageContext): string {
   const where = city(ctx.mission, ctx.site);
   return layout(ctx, `Trips to ${where}`, `<div class="intro panel">${cityPhoto(where)}<div class="intro-text"><p class="lead">Flights and stays for ${ctx.mission.partySize} from Tel Aviv, 12 December.</p>
 <p class="muted">Compare fares from 3 carriers and 3 properties. Prices include taxes.</p></div><a class="btn lg" href="/site/flights" data-label="Search flights">Search flights</a></div>
-<div class="grid3">${HOTELS.map((h) => `<div class="tile">${hotelPhoto(h, 'thumb')}<b>${esc(h.name)}</b><span class="muted">${esc(h.area)}</span></div>`).join('')}</div>`);
+<div class="grid3">${HOTELS.slice(0, 4).map((h) => `<div class="tile">${hotelPhoto(h, 'thumb')}<b>${esc(h.name)}</b><span class="muted">${esc(h.area)}</span></div>`).join('')}</div>`);
 }
 
 function filters(groups: Array<[string, string[]]>): string {
@@ -44,9 +44,19 @@ function sortTabs(ctx: PageContext): string {
   return `<div class="sorts"><span class="on"><b>Best</b>${money(prices[0]!)}</span><span><b>Cheapest</b>${money(Math.min(...prices))}</span><span><b>Fastest</b>4h 15m</span></div>`;
 }
 
+function trend(): string {
+  const bars = [62, 48, 70, 55, 40, 66, 82, 58, 45, 74, 90, 52, 38, 60].map((h, i) => `<i style="height:${h}%"${i === 11 ? ' class="on"' : ''}></i>`).join('');
+  return `<div class="panel railcard"><b>Price trend · December</b><div class="bars">${bars}</div><span class="muted small">Prices are higher than usual for these dates.</span></div>`;
+}
+
+function stayPromo(ctx: PageContext): string {
+  const items = HOTELS.slice(0, 3).map((h) => `<div class="mini">${hotelPhoto(h, 'mini-img')}<div><b>${esc(h.name)}</b><span class="muted">${h.score.toFixed(1)} ${esc(h.scoreLabel)}</span><span>${money(hotelPrice(h, ctx.mission, ctx.site))}</span></div></div>`).join('');
+  return `<div class="panel railcard"><b>Hotels in ${esc(city(ctx.mission, ctx.site))}</b>${items}</div>`;
+}
+
 export function flightsPage(ctx: PageContext): string {
-  const side = filters([['Stops', ['Any', 'Direct only', '1 stop']], ['Departure', ['Any time', 'Morning', 'Night (red-eye)']], ['Carriers', FLIGHTS.map((f) => f.airline)]]);
-  return layout(ctx, `Tel Aviv to ${city(ctx.mission, ctx.site)}`, `<div class="split">${side}<div class="list">${sortTabs(ctx)}${FLIGHTS.map((f) => flightRow(f, ctx)).join('')}</div></div>`);
+  const side = filters([['Stops', ['Any', 'Direct only', '1 stop']], ['Departure', ['Any time', 'Morning', 'Night (red-eye)']], ['Airlines', FLIGHTS.map((f) => f.airline)]]);
+  return layout(ctx, `Tel Aviv to ${city(ctx.mission, ctx.site)}`, `<div class="split three">${side}<div class="list">${sortTabs(ctx)}${FLIGHTS.map((f) => flightRow(f, ctx)).join('')}</div><aside class="rail">${trend()}${stayPromo(ctx)}</aside></div>`);
 }
 
 export function flightDetail(ctx: PageContext, f: Flight): string {
@@ -67,13 +77,15 @@ const chips = (items: string[], icon = '') => `<div class="chips">${items.map((x
 function hotelRow(h: Hotel, ctx: PageContext): string {
   return `<div class="hotel panel">${hotelPhoto(h)}<div class="info"><div class="head"><div><b class="name">${esc(h.name)}</b>${stars(h.stars)}</div>${rating(h)}</div>
 <span class="muted area">${ICONS.pin}${esc(h.area)}</span><p class="tagline">${esc(h.tagline)}</p>${chips(h.features)}</div>
-<div class="buy"><span class="muted">${ctx.mission.nights} nights, ${adults(ctx.mission.partySize)}</span><strong>${money(hotelPrice(h, ctx.mission, ctx.site))}</strong>
-<a class="btn" href="/site/hotels/${h.id}" data-label="View ${esc(h.name)}">See availability</a></div></div>`;
+<div class="buy"><span class="fav">${ICONS.heart}</span>${when(h.perNight < 130, '<span class="scarce">Only 2 rooms left</span>')}<span class="muted">${ctx.mission.nights} nights, ${adults(ctx.mission.partySize)}</span><strong>${money(hotelPrice(h, ctx.mission, ctx.site))}</strong>
+<span class="ok small">Free cancellation</span><a class="btn" href="/site/hotels/${h.id}" data-label="View ${esc(h.name)}">See availability</a></div></div>`;
 }
 
 export function hotelsPage(ctx: PageContext): string {
-  const side = filters([['Popular', ['Free cancellation', 'Sea view', 'Pool', 'Air conditioning']], ['Rating', ['Any', 'Very good 8+', 'Superb 9+']]]);
-  return layout(ctx, `Stays in ${city(ctx.mission, ctx.site)}`, `<div class="split">${side}<div class="list">${HOTELS.map((h) => hotelRow(h, ctx)).join('')}</div></div>`);
+  const where = city(ctx.mission, ctx.site);
+  const side = `<div class="sidecol">${mapCard(where)}${filters([['Popular', ['Free cancellation', 'Sea view', 'Pool', 'Air conditioning']], ['Rating', ['Any', 'Very good 8+', 'Superb 9+']]])}</div>`;
+  const sorts = `<div class="sorts"><span class="on"><b>Recommended</b>${HOTELS.length} properties</span><span><b>Lowest price</b>from ${money(Math.min(...HOTELS.map((h) => hotelPrice(h, ctx.mission, ctx.site))))}</span><span><b>Top reviewed</b>8+ rating</span></div>`;
+  return layout(ctx, `Stays in ${where}`, `<div class="split">${side}<div class="list">${sorts}${HOTELS.map((h) => hotelRow(h, ctx)).join('')}</div></div>`);
 }
 
 function haggleBox(h: Hotel, cart: Cart): string {

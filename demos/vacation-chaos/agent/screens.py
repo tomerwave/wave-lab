@@ -8,7 +8,7 @@ import config
 from output import say
 
 OUT = Path(__file__).parent.parent / "docs" / "screens"
-SIZES = {"site": (1440, 900), "control": (1920, 1080), "vote": (390, 844)}
+SIZES = {"site": (1440, 1000), "control": (1920, 1080), "vote": (390, 844)}
 EXTRAS = [("egg-duck", "Easter egg: the duck peeks in", "site-hotels"), ("over-budget", "Over budget: needs presenter approval", "checkout-captcha")]
 
 
