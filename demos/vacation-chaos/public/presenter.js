@@ -24,6 +24,7 @@ function twistButtons() {
 function buildPanel() {
   panel.innerHTML = `<div class="label">Presenter · press P to hide</div>
 <h3>Run</h3>${button('Start replay', 'start-replay', {}, 'primary')}${button('Start live: local', 'start-live', { runtime: 'local' }, 'primary')}${button('Start live: AgentCore', 'start-live', { runtime: 'agentcore' }, 'primary')}${button('Turbo finale', 'turbo')}${button('Reset', 'reset')}
+<h3>Agent process</h3>${button('Relaunch agent', 'launch-agent')}${button('Pull the plug', 'stop-agent')}<input id="modelId" placeholder="Brain transplant: Bedrock model id">${button('Relaunch with this model', 'launch-agent', { runtime: 'agentcore', withModel: true })}
 <h3>Pace</h3>${button('Storytelling', 'pace', { pace: 'story' })}${button('Turbo', 'pace', { pace: 'turbo' })}
 <h3>Crowd</h3>${button('Tackle the agent: open vote', 'vote', {}, 'primary')}${button('Close vote now', 'close-vote')}${button('Extend 15s', 'extend-vote')}
 <h3>Answer the agent</h3><input id="answerText" placeholder="Your answer" value="Go ahead.">${button('Answer', 'answer', { approve: false })}${button('Approve overspend', 'answer', { approve: true })}${button('I solved the human check', 'captcha')}
@@ -35,6 +36,7 @@ panel.addEventListener('click', (e) => {
   if (!el) return;
   const body = JSON.parse(el.dataset.body);
   if (el.dataset.act === 'answer') body.text = document.getElementById('answerText').value;
+  if (body.withModel) body.model = document.getElementById('modelId').value;
   void act(el.dataset.act, body);
 });
 

@@ -6,6 +6,7 @@ import QRCode from 'qrcode';
 import type { ShowConfig } from './config.js';
 import { CONTENT_TYPES, readForm, readJson, send, sendJson, voterId } from './http.js';
 import { createMcpHandler } from './mcp.js';
+import { AgentLauncher } from './launcher.js';
 import { ACTIONS } from './presenter.js';
 import { controlPage, votePage } from './screens.js';
 import { CHECKPOINTS } from './show/engine.js';
@@ -57,14 +58,14 @@ async function vote(show: Show, req: IncomingMessage, res: ServerResponse): Prom
   sendJson(res, 200, publicState(show), cookie);
 }
 
-async function presenter(show: Show, req: IncomingMessage, res: ServerResponse, action: string): Promise<void> {
+async function presenter(ctx: { show: Show; launcher: AgentLauncher }, req: IncomingMessage, res: ServerResponse, action: string): Promise<void> {
   const run = ACTIONS[action];
   if (!run) return sendJson(res, 404, { error: 'unknown action' });
-  const result = run(show, await readJson(req));
+  const result = run(ctx.show, await readJson(req), ctx.launcher);
   sendJson(res, 200, { ok: true, result: result ?? null });
 }
 
-export function createShowServer(show: Show, config: ShowConfig): Server {
+export function createShowServer(show: Show, config: ShowConfig, launcher = new AgentLauncher(config)): Server {
   const mcp = createMcpHandler(show);
   const meta = { checkpoints: CHECKPOINTS, twists: Object.values(TWISTS).map((t) => ({ id: t.id, label: t.label })), voteUrl: `${config.publicUrl}/vote` };
   const authed = (req: IncomingMessage) => req.headers['x-presenter-key'] === config.presenterKey;
@@ -76,7 +77,7 @@ export function createShowServer(show: Show, config: ShowConfig): Server {
     [/^\/api\/state$/, (_q, res) => sendJson(res, 200, publicState(show))],
     [/^\/api\/vote$/, (req, res) => vote(show, req, res)],
     [/^\/api\/beacon$/, async (req, res) => { const b = await readJson(req); show.record('click', { label: String(b.label ?? '').slice(0, 80) }); sendJson(res, 200, {}); }],
-    [/^\/api\/presenter\/[\w-]+$/, (req, res, url) => (authed(req) ? presenter(show, req, res, url.pathname.split('/').pop()!) : sendJson(res, 401, { error: 'presenter key required' }))],
+    [/^\/api\/presenter\/[\w-]+$/, (req, res, url) => (authed(req) ? presenter({ show, launcher }, req, res, url.pathname.split('/').pop()!) : sendJson(res, 401, { error: 'presenter key required' }))],
     [/^\/api\/telemetry$/, async (req, res) => { if (!authed(req)) return sendJson(res, 401, {}); show.addTelemetry(await readJson(req)); sendJson(res, 200, {}); }],
     [/^\/qr\.svg$/, async (_q, res) => send(res, 200, await QRCode.toString(`${config.publicUrl}/vote`, { type: 'svg', margin: 0, color: { dark: '#2b3138', light: '#faf6ef' } }), { type: 'image/svg+xml' })],
     [/^\/static\//, (_q, res, url) => serveStatic(res, url.pathname.slice('/static/'.length))],

@@ -15,3 +15,8 @@ export function loadConfig(): ShowConfig {
     presenterKey: process.env.PRESENTER_KEY ?? randomBytes(4).toString('hex'),
   };
 }
+
+export function agentEnvironment(config: ShowConfig, showUrl: string): Record<string, string> {
+  const inherited = Object.fromEntries(Object.entries(process.env).filter((entry): entry is [string, string] => entry[1] !== undefined));
+  return { ...inherited, SHOW_URL: showUrl, PRESENTER_KEY: config.presenterKey };
+}

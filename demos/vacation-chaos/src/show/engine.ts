@@ -23,7 +23,7 @@ export interface Booking { label: string; price: number }
 export interface Telemetry { toolCalls: number; inputTokens: number; outputTokens: number; latencyMs: number; model: string | null }
 export interface Haggle { hotelId: string; offer: number; accepted: boolean; reply: string }
 export interface Cart { insurance: boolean; haggle: Haggle | null }
-export interface ToolReply { mission: Mission; inbox: string[]; note?: string }
+export interface ToolReply { mission: Mission; inbox: string[]; progress: { booked: Snapshot['booked']; lastPage: string } }
 
 export interface Snapshot {
   runMode: RunMode; pace: Pace; checkpoint: number; mission: Mission; site: SiteMode; vote: ActiveVote | null;
@@ -238,7 +238,7 @@ export class Show {
     await this.waitUntilFree();
     await this.sleep(delayMs);
     const inbox = this.inbox.splice(0);
-    return { mission: structuredClone(this.state.mission), inbox };
+    return { mission: structuredClone(this.state.mission), inbox, progress: { booked: structuredClone(this.state.booked), lastPage: this.state.route } };
   }
 
   private optionsFor(target: VoteTarget, optionIds?: string[]): VoteOption[] {
