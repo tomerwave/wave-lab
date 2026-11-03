@@ -1,10 +1,11 @@
 import type { ReactNode } from 'react';
 import type { Snapshot } from '../../src/show/engine';
-import { Kicker, Primary, Secondary, Title } from './Scene';
+import { Primary, Title } from './Scene';
 import { MomentScene } from './Looks';
+import { Recap } from './Recap';
 import type { Moment } from './moments';
 import { act, isPresenter, start } from './presenter';
-import { bookings, money, spent } from './format';
+import { money } from './format';
 import { meta, voteHost } from './show';
 
 const BUDGETS = [1200, 2400, 5000];
@@ -50,31 +51,13 @@ function Lobby({ snap }: { snap: Snapshot }) {
   );
 }
 
-const paidTotal = (s: Snapshot) => Number(s.events.filter((e) => e.type === 'booking' && e.data.item === 'trip').at(-1)?.data.price ?? spent(s));
-
-function EndScene({ snap }: { snap: Snapshot }) {
-  const again = isPresenter && <Secondary onClick={() => void act('reset')}>Back to the lobby</Secondary>;
-  if (snap.stopped) return <><Kicker tone="text-amber-700">The agent stopped</Kicker><Title small>{snap.stopped}</Title><Lead>{snap.thought}</Lead>{again}</>;
-  return (
-    <>
-      <Kicker tone="text-green-700">Trip booked</Kicker>
-      <Title>Paid {money(paidTotal(snap))}</Title>
-      <Lead>{snap.finished}</Lead>
-      <div className="max-w-xl divide-y divide-zinc-100 border-y border-zinc-200">
-        {bookings(snap).map((b) => <div key={b.label} className="flex justify-between py-2 text-base"><span className="text-zinc-500">{b.label}</span><b className="font-medium">{money(b.price)}</b></div>)}
-      </div>
-      {again}
-    </>
-  );
-}
-
 interface Scene { name: string; dark?: boolean; body: ReactNode }
 
 type Picker = (snap: Snapshot, moment: Moment | null) => Scene | null | false;
 
 const PICKERS: Picker[] = [
   (_snap, moment) => moment !== null && { name: `moment-${moment.at}-${moment.title}`, dark: true, body: <MomentScene moment={moment} /> },
-  (snap) => Boolean(snap.finished ?? snap.stopped) && { name: 'end', body: <EndScene snap={snap} /> },
+  (snap) => Boolean(snap.finished ?? snap.stopped) && { name: 'end', body: <Recap snap={snap} /> },
   (snap) => snap.runMode === 'idle' && { name: 'lobby', body: <Lobby snap={snap} /> },
 ];
 

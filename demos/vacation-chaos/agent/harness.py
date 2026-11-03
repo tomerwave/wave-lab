@@ -9,7 +9,7 @@ from botocore.config import Config
 
 import config
 from output import say
-from show_api import post_telemetry
+from show_api import post
 
 PROMPT = (Path(__file__).parent / "prompt.md").read_text()
 ACTOR = "tomer"
@@ -141,8 +141,16 @@ def deploy(settings: config.Settings) -> None:
 def report(settings: config.Settings, event: dict, model: str) -> None:
     usage = event["metadata"].get("usage", {})
     latency = event["metadata"].get("metrics", {}).get("latencyMs", 0)
-    post_telemetry(settings, {"inputTokens": usage.get("inputTokens", 0), "outputTokens": usage.get("outputTokens", 0),
+    post(settings, "/api/telemetry", {"inputTokens": usage.get("inputTokens", 0), "outputTokens": usage.get("outputTokens", 0),
                               "latencyMs": latency, "model": f"{model} on AgentCore"})
+
+
+def report_run(settings: config.Settings, session: str) -> None:
+    control = boto3.client("bedrock-agentcore-control", region_name=settings.region)
+    harness = control.get_harness(harnessId=(find_harness(control, settings.harness_name) or {}).get("harnessId", ""))["harness"]
+    runtime = harness["environment"]["agentCoreRuntimeEnvironment"]["agentRuntimeId"]
+    memory = harness.get("memory", {}).get("managedMemoryConfiguration", {}).get("arn", "").rsplit("/", 1)[-1]
+    post(settings, "/api/run", {"sessionId": session, "region": settings.region, "harnessId": harness["harnessId"], "runtimeId": runtime, "memoryId": memory})
 
 
 def harness_arn(settings: config.Settings) -> str:
@@ -182,6 +190,7 @@ def invoke(settings: config.Settings, model: str | None) -> None:
     extra = {"model": {"bedrockModelConfig": {"modelId": model, "maxTokens": TOKENS_PER_REPLY}}} if model else {}
     session = f"vacation-chaos-{uuid.uuid4()}"
     say(f"Session {session}")
+    report_run(settings, session)
     response = data.invoke_harness(
         harnessArn=harness_arn(settings), runtimeSessionId=session, actorId=ACTOR, tools=run_tools(settings), allowedTools=ALLOWED_TOOLS,
         messages=[{"role": "user", "content": [{"text": settings.start_message}]}],

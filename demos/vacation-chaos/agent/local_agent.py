@@ -9,7 +9,7 @@ from strands_tools.browser import AgentCoreBrowser, LocalChromiumBrowser
 
 import config
 from output import say
-from show_api import post_telemetry
+from show_api import post
 
 PROMPT = (Path(__file__).parent / "prompt.md").read_text()
 
@@ -24,7 +24,7 @@ class Telemetry:
         totals = {**metrics.accumulated_usage, **metrics.accumulated_metrics}
         delta = {k: int(totals.get(k, 0)) - v for k, v in self.sent.items()}
         self.sent = {k: int(totals.get(k, 0)) for k in self.sent}
-        post_telemetry(self.settings, {**delta, "model": self.settings.model_id})
+        post(self.settings, "/api/telemetry", {**delta, "model": self.settings.model_id})
 
 
 def build_browser(settings: config.Settings):

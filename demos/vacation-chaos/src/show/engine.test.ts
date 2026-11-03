@@ -227,3 +227,19 @@ test('pause freezes the vote clock and the agent until resume', async () => {
   h.advance(1);
   assert.equal(h.show.snapshot().vote?.target, 'rule');
 });
+
+test('the recap remembers the whole run: crowd choices, world twists, Jev picks and asks', () => {
+  const h = harness();
+  finishOpening(h);
+  h.show.applyTwist('oil-shock');
+  h.show.record('step', { kind: 'Jev', text: 'LY 375 (91%)' });
+  h.show.ask('May I pay?', 'approval').catch(() => undefined);
+  h.show.record('page', { route: '/site/flights' });
+  const recap = h.show.snapshot().recap;
+  assert.deepEqual(recap.choices.map((c) => [c.by, c.winner]), [['crowd', 'Lisbon'], ['crowd', 'No red-eye flights'], ['world', 'Oil shock']]);
+  assert.deepEqual(recap.jev, ['LY 375 (91%)']);
+  assert.deepEqual(recap.asks, ['May I pay?']);
+  assert.equal(recap.pages, 1);
+  h.show.reset('local');
+  assert.deepEqual(h.show.snapshot().recap.choices, []);
+});

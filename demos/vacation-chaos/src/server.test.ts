@@ -107,3 +107,14 @@ test('every scenario sets up and its page renders', async (t) => {
     assert.equal((await fetch(`${base}${path}${path.startsWith('/site') ? '?mirror=1' : ''}`)).status < 600, true, name);
   }
 });
+
+test('the code tour serves real excerpts from the files it names', async (t) => {
+  const { base, close } = await boot();
+  t.after(close);
+  const tour = await (await fetch(`${base}/api/tour`)).json() as Array<{ title: string; file: string; start: number; code: string }>;
+  assert.ok(tour.length >= 8);
+  const harness = tour.find((s) => s.title === 'The agent is configuration')!;
+  assert.match(harness.code, /^def harness_config/);
+  assert.ok(harness.start > 1);
+  assert.equal((await fetch(`${base}/tour`)).status, 200);
+});

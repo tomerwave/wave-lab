@@ -14,8 +14,8 @@ def call(settings: config.Settings, path: str, body: dict) -> dict:
         return json.loads(response.read() or b"{}")
 
 
-def post_telemetry(settings: config.Settings, payload: dict) -> None:
+def post(settings: config.Settings, path: str, payload: dict) -> None:
     try:
-        call(settings, "/api/telemetry", payload)
+        call(settings, path, payload)
     except OSError as error:
-        say(f"Telemetry skipped: {error}")
+        say(f"Could not send {path} to the show: {error}")

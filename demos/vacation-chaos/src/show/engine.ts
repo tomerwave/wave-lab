@@ -1,4 +1,5 @@
 import { randomUUID } from 'node:crypto';
+import { freshRecap, track, type Recap, type RunInfo } from './recap.js';
 import { CHAOS_POOL, DESTINATIONS, RULES, TWISTS } from './twists.js';
 import { SCREEN_MS, START_BUDGET, freshMission, freshSite, type Ask, type AskKind, type Mission, type Pace, type RunMode, type SiteMode, type VoteOption } from './types.js';
 
@@ -32,7 +33,7 @@ export interface Snapshot {
   lastResult: { question: string; winner: string; total: number } | null;
   booked: { flight: Booking | null; hotel: Booking | null }; applied: string[]; route: string; lastClick: string | null;
   thought: string | null; pendingAsk: Ask | null; approvedOverspend: boolean; finished: string | null; stopped: string | null;
-  telemetry: Telemetry; cart: Cart; chaosVotes: number; audience: number; events: ShowEvent[];
+  telemetry: Telemetry; cart: Cart; chaosVotes: number; audience: number; recap: Recap; run: RunInfo | null; events: ShowEvent[];
 }
 
 interface ShowOptions { now?: () => number; sleep?: (ms: number) => Promise<void>; random?: () => number }
@@ -97,7 +98,7 @@ export class Show {
       booked: { flight: null, hotel: null }, applied: [], route: '/site', lastClick: null, thought: null,
       pendingAsk: null, approvedOverspend: false, finished: null, stopped: null,
       telemetry: { toolCalls: 0, inputTokens: 0, outputTokens: 0, latencyMs: 0, model: null },
-      cart: { insurance: null, haggle: null }, chaosVotes: 0, audience: this.audience.size, events: [],
+      cart: { insurance: null, haggle: null }, chaosVotes: 0, audience: this.audience.size, recap: freshRecap(), run: null, events: [],
     };
     this.voters.clear();
     this.inbox = [];
@@ -209,7 +210,7 @@ export class Show {
     const winner = vote.options.reduce((best, o) => (vote.tally[o.id]! > vote.tally[best.id]! ? o : best), vote.options[0]!);
     this.state.vote = null;
     this.state.lastResult = { question: vote.question, winner: winner.label, total: vote.total };
-    this.record('vote', { phase: 'closed', target: vote.target, winner: winner.label, winnerId: winner.id, total: vote.total });
+    this.record('vote', { phase: 'closed', target: vote.target, question: vote.question, winner: winner.label, winnerId: winner.id, total: vote.total });
     this.resolveVote(vote.target, winner.id);
     return winner.id;
   }
@@ -240,7 +241,9 @@ export class Show {
   }
 
   record(type: EventType, data: Record<string, unknown>): void {
-    this.state.events.push({ seq: ++this.seq, at: this.now(), type, data });
+    const event: ShowEvent = { seq: ++this.seq, at: this.now(), type, data };
+    this.state.events.push(event);
+    track(this.state.recap, event);
     if (this.state.events.length > 400) this.state.events.splice(0, 100);
     if (type === 'page') this.state.route = String(data.route);
     if (type === 'click') this.state.lastClick = String(data.label);
@@ -295,6 +298,11 @@ export class Show {
     this.state.finished = summary;
     this.lastWinners = [...this.state.applied];
     this.record('finish', { summary });
+  }
+
+  setRun(run: RunInfo): void {
+    this.state.run = run;
+    this.changed();
   }
 
   addTelemetry(t: Partial<Telemetry>): void {

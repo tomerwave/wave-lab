@@ -4,6 +4,8 @@ import { extname, join, normalize } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import QRCode from 'qrcode';
 import { isLocal, type ShowConfig } from './config.js';
+import { runInfoFrom } from './show/recap.js';
+import { codeTour } from './tour.js';
 import { CONTENT_TYPES, readForm, readJson, send, sendJson, voterCookie, voterId } from './http.js';
 import { jevDecider } from './jev.js';
 import { createMcpHandler } from './mcp.js';
@@ -97,13 +99,19 @@ export function createShowServer(show: Show, config: ShowConfig, launcher = new 
   const authed = (req: IncomingMessage) => req.headers['x-presenter-key'] === config.presenterKey;
   const routes: Array<[RegExp, Handler]> = [
     [/^\/$/, (_q, res) => send(res, 302, '', { headers: { location: '/control' } })],
-    [/^\/control$/, (_q, res) => send(res, 200, controlPage(meta))],
+    [/^\/(control|tour)$/, (_q, res) => send(res, 200, controlPage(meta))],
+    [/^\/api\/tour$/, async (_q, res) => sendJson(res, 200, await codeTour())],
     [/^\/vote$/, (req, res) => { const v = voterId(req); show.join(v.id); send(res, 200, votePage(), { headers: v.fresh ? { 'set-cookie': voterCookie(v.id) } : {} }); }],
     [/^\/events$/, (req, res) => streamEvents(show, req, res)],
     [/^\/api\/state$/, (_q, res) => sendJson(res, 200, publicState(show))],
     [/^\/api\/vote$/, (req, res) => vote(show, req, res)],
     [/^\/api\/beacon$/, (req, res) => beacon(show, req, res)],
     [/^\/api\/presenter\/[\w-]+$/, (req, res, url) => (authed(req) ? presenter({ show, launcher }, req, res, url.pathname.split('/').pop()!) : sendJson(res, 401, { error: 'presenter key required' }))],
+    [/^\/api\/run$/, async (req, res) => {
+      const run = authed(req) ? runInfoFrom(await readJson(req)) : null;
+      if (run) show.setRun(run);
+      sendJson(res, run ? 200 : 400, {});
+    }],
     [/^\/api\/telemetry$/, async (req, res) => { if (!authed(req)) return sendJson(res, 401, {}); show.addTelemetry(await readJson(req)); sendJson(res, 200, {}); }],
     [/^\/qr\.svg$/, async (_q, res) => send(res, 200, await QRCode.toString(`${config.publicUrl}/vote`, { type: 'svg', margin: 0, color: { dark: '#2b3138', light: '#faf6ef' } }), { type: 'image/svg+xml' })],
     [/^\/static\//, (_q, res, url) => serveStatic(res, PUBLIC, url.pathname.slice('/static/'.length))],

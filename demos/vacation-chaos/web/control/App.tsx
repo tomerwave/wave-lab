@@ -6,6 +6,7 @@ import { useMoments } from './moments';
 import { isPresenter } from './presenter';
 import { useNow, useShow, type Live, type Wire } from './show';
 import { Stage } from './Stage';
+import { Tour } from './Tour';
 import { HeadsUpBanner, PausedBanner, VotePanel } from './Vote';
 
 function Overlays({ snap, serverNow }: { snap: Wire; serverNow: number }) {
@@ -35,7 +36,11 @@ function Show({ live: { snap, offset } }: { live: Live }) {
   );
 }
 
-export function App() {
+function MissionControl() {
   const live = useShow();
   return live ? <Show live={live} /> : null;
+}
+
+export function App() {
+  return location.pathname === '/tour' ? <Tour /> : <MissionControl />;
 }

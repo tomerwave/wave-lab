@@ -45,6 +45,11 @@ bookings and the ending. When the agent needs a human, it calls `ask_presenter` 
 Control draws the matching controls: **Approve** and **Decline** for spending, the goat grid for the human
 check, or the agent's own answers as buttons. `P` opens a backstage panel for rescues.
 
+When the run ends, Mission Control shows a recap: what the crowd and the world threw at the agent, what it
+booked and decided, run time, tokens and an estimated model cost, and links into the AgentCore console for
+this harness, its traces, logs, memory and browser. `/tour` is a code tour of the nine files that matter,
+served from the live source.
+
 ### AgentCore setup (once)
 
 AgentCore Browser runs in AWS, so it needs a public URL for the show server. Phones need one too.
