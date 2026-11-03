@@ -36,8 +36,12 @@ const SECTIONS: Record<string, (r: Route) => SiteResponse> = {
   hotels: (r) => hotels(r),
   checkout: (r) => checkout(r.show, r.req, r.ctx),
   pay: (r) => (writable(r.req) ? pay(r.show, r.req, r.ctx) : ok(searchPage(r.ctx))),
-  done: (r) => ok(donePage(r.ctx, r.show.spent())),
+  done: (r) => ok(donePage(r.ctx, tripTotal(r.show), r.show.cart.insurance)),
 };
+
+function tripTotal(show: Show): number {
+  return show.spent() + (show.cart.insurance ? INSURANCE : 0);
+}
 
 function route(show: Show, req: SiteRequest, ctx: PageContext): SiteResponse {
   const [, , section = '', id, action] = req.path.split('/');
@@ -93,7 +97,7 @@ function haggle(show: Show, hotel: Hotel, offer: number, ctx: PageContext): Site
 
 function checkoutLines(show: Show) {
   const lines = [show.booked.flight, show.booked.hotel].filter((b) => b !== null).map((b) => ({ label: b.label, price: b.price }));
-  const total = show.spent() + (show.cart.insurance ? INSURANCE : 0);
+  const total = tripTotal(show);
   return { lines, total };
 }
 

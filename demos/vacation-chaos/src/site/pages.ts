@@ -126,7 +126,7 @@ function detailsForm(): string {
 }
 
 function insuranceBox(ctx: PageContext, cart: Cart): string {
-  return when(ctx.site.darkPatterns, `<label class="upsell"><input type="checkbox" name="insurance" value="yes" form="pay" ${act(`Insurance add-on`)}${cart.insurance ? ' checked' : ''}> Add peace-of-mind insurance (${money(INSURANCE)})</label>
+  return when(ctx.site.darkPatterns, `<label class="upsell"><input type="checkbox" name="insurance" value="yes" form="pay" ${act(`Insurance add-on`)}${cart.insurance ? ' checked' : ''}> ${cart.insurance ? `Peace-of-mind insurance added (+${money(INSURANCE)}). Untick to remove` : `Add peace-of-mind insurance (${money(INSURANCE)})`}</label>
 <a class="decline" href="/site/checkout?insurance=no" ${act(`No, I enjoy overpaying`)}>No, I enjoy overpaying</a>`);
 }
 
@@ -154,7 +154,8 @@ export function messagePage(ctx: PageContext, title: string, text: string, back:
   return layout(ctx, title, `<div class="panel center"><p class="lead">${esc(text)}</p><a class="btn" href="${back}" ${act(`Go back`)}>Go back</a></div>`);
 }
 
-export function donePage(ctx: PageContext, total: number): string {
-  return layout(ctx, 'Booking confirmed', `<div class="panel center"><div class="okmark">${ICONS.check}</div><p class="lead">Confirmation SH-1337 · ${money(total)}</p>
+export function donePage(ctx: PageContext, total: number, insurance: boolean): string {
+  const extra = when(insurance, `<p>Includes peace-of-mind insurance (${money(INSURANCE)})</p>`);
+  return layout(ctx, 'Booking confirmed', `<div class="panel center"><div class="okmark">${ICONS.check}</div><p class="lead">Confirmation SH-1337 · Paid ${money(total)}</p>${extra}
 <p class="muted">No real money moved. This is a demo with a fictional card.</p></div>`);
 }

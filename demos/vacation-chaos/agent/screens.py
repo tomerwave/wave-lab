@@ -39,7 +39,7 @@ def extras(page, settings: config.Settings) -> None:
     presenter(settings, "scenario", {"name": "checkout-captcha"})
     presenter(settings, "captcha", {})
     page.goto(f"{settings.show_url}/site/checkout")
-    page.click("text=Pay now")
+    page.click("#pay-now")
     page.wait_for_timeout(800)
     page.screenshot(path=str(OUT / "over-budget.png"))
 

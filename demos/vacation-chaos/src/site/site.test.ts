@@ -167,3 +167,15 @@ test('a pre-ticked add-on is listed as an action so an agent can see and untick 
   assert.match(html, /<input type="checkbox" name="insurance" value="yes" form="pay" id="insurance-add-on"[^>]* checked>/);
   assert.match(html, /Page actions: [^<]*#insurance-add-on \(Insurance add-on\)[^<]*#no-i-enjoy-overpaying/);
 });
+
+test('checkout and confirmation say in words when insurance was added, and the paid total includes it', async () => {
+  const { show, get, post } = setup();
+  show.applyTwist('dark-patterns');
+  show.book('flight', 'LY 375', 640);
+  assert.match((await get('/site/checkout')).html, /Peace-of-mind insurance added \(\+\$89\)/);
+  show.site.captcha = 'solved';
+  await post('/site/pay', { insurance: 'yes' });
+  const done = (await get('/site/done')).html;
+  assert.match(done, /Paid \$729/);
+  assert.match(done, /Includes peace-of-mind insurance/);
+});
