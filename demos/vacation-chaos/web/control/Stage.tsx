@@ -1,4 +1,4 @@
-import type { ReactNode } from 'react';
+import { useEffect, type ReactNode } from 'react';
 import type { Snapshot } from '../../src/show/engine';
 import { Primary, Title } from './Scene';
 import { MomentScene } from './Looks';
@@ -29,8 +29,19 @@ function BudgetPicker({ budget }: { budget: number }) {
   );
 }
 
+const BACK_TO_SLIDES = '/talk?slide=9';
+
+function useBackToSlides(): void {
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => { if (e.key === 'ArrowLeft' || e.key === 'PageUp') location.assign(BACK_TO_SLIDES); };
+    document.addEventListener('keydown', onKey);
+    return () => document.removeEventListener('keydown', onKey);
+  }, []);
+}
+
 function Lobby({ snap }: { snap: Snapshot }) {
   const m = snap.mission;
+  useBackToSlides();
   return (
     <>
       <Title>Let's book Tomer a vacation</Title>
@@ -47,6 +58,7 @@ function Lobby({ snap }: { snap: Snapshot }) {
       </div>
       {isPresenter && <BudgetPicker budget={m.budget} />}
       {isPresenter && <Primary onClick={() => void start(meta.defaultRuntime)}>Start</Primary>}
+      {isPresenter && <a href={BACK_TO_SLIDES} className="self-start text-sm text-zinc-500 underline underline-offset-4">Back to the slides</a>}
     </>
   );
 }

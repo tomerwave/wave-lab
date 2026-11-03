@@ -4,7 +4,7 @@ function keyFromLink(): void {
   const key = new URLSearchParams(location.hash.slice(1)).get('key');
   if (!key) return;
   sessionStorage.setItem(KEY, key);
-  history.replaceState(null, '', location.pathname);
+  history.replaceState(null, '', location.pathname + location.search);
 }
 
 keyFromLink();
