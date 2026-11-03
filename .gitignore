@@ -146,3 +146,7 @@ vite.config.ts.timestamp-*
 
 # Brainstorm and plan scratch
 .superpowers/
+
+# Python
+.venv/
+__pycache__/
