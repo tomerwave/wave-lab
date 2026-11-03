@@ -18,6 +18,6 @@ These examples teach the difference between model choice and server authority. A
 
 ## How to apply
 
-Read configuration only in each demo's src/config.ts and print user-facing CLI output only through src/output.ts. These are scoped Godlint boundaries, not exclusions from the scan. The main branch is permitted alongside conventional feature branches.
+Read configuration only in each demo's src/config.ts and print user-facing CLI output only through src/output.ts. Python agents follow the same boundary with agent/config.py and agent/output.py. These are scoped Godlint boundaries, not exclusions from the scan. The main branch is permitted alongside conventional feature branches.
 
 The refund ledger is in memory. Keep its check-and-record section synchronous with no await. Production payments require durable idempotency; explain that limitation in the demo README. Keep explanatory prose in documentation. Test rejected operations for absence of side effects and run the five offline scenarios after changing the CLI.
