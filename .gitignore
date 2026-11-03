@@ -143,3 +143,11 @@ vite.config.ts.timestamp-*
 .vite/
 
 .DS_Store
+
+# Brainstorm and plan scratch
+.superpowers/
+
+# Python
+.venv/
+__pycache__/
+demos/vacation-chaos/agent/screenshots/

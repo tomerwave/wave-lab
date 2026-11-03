@@ -7,7 +7,7 @@ rules:
     allow: [main]
   security/direct-environment-read:
     severity: error
-    allow-in: [demos/*/src/config.ts]
+    allow-in: [demos/*/src/config.ts, demos/*/agent/config.py]
   logging/no-production-log:
     severity: error
-    allow-in: [demos/*/src/output.ts]
+    allow-in: [demos/*/src/output.ts, demos/*/agent/output.py]

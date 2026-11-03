@@ -1,0 +1,38 @@
+{
+  "name": "@tomerwave/vacation-chaos",
+  "version": "1.0.0",
+  "description": "Crowd-driven live agent demo: an agent books a vacation while the audience votes for chaos.",
+  "scripts": {
+    "start": "vite build --logLevel warn && node --env-file-if-exists=.env --import tsx src/main.ts",
+    "tunnel": "cloudflared tunnel --no-autoupdate --url http://localhost:4545",
+    "build": "tsc && vite build",
+    "typecheck": "tsc --noEmit && tsc --noEmit -p web",
+    "test": "node --import tsx --test src/*.test.ts src/**/*.test.ts web/**/*.test.ts"
+  },
+  "license": "MIT",
+  "type": "module",
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "1.32.2",
+    "@typesafe-ai/sdk": "0.7.0",
+    "qrcode": "1.5.4",
+    "react": "19.3.1",
+    "react-dom": "19.3.1",
+    "zod": "4.6.5"
+  },
+  "devDependencies": {
+    "@tailwindcss/vite": "4.3.3",
+    "@types/node": "26.5.1",
+    "@types/qrcode": "1.5.6",
+    "@types/react": "19.3.0",
+    "@types/react-dom": "19.3.0",
+    "@vitejs/plugin-react": "6.1.2",
+    "tailwindcss": "4.3.3",
+    "tsx": "4.23.13",
+    "typescript": "7.0.2",
+    "vite": "8.3.4"
+  },
+  "private": true,
+  "engines": {
+    "node": ">=22.13.0"
+  }
+}
