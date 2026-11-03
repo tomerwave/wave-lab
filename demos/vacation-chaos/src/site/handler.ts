@@ -1,7 +1,7 @@
 import type { Show } from '../show/engine.js';
 import { findFlight, findHotel, flightPrice, hotelPrice, type Hotel } from './inventory.js';
 import { outagePage, type PageContext } from './layout.js';
-import { INSURANCE, approvalPage, checkoutPage, donePage, flightDetail, flightsPage, hotelDetail, hotelsPage, messagePage, searchPage } from './pages.js';
+import { INSURANCE, checkoutPage, donePage, flightDetail, flightsPage, hotelDetail, hotelsPage, messagePage, searchPage } from './pages.js';
 import { beforeRequest } from './rules.js';
 
 export interface SiteRequest { method: string; path: string; form: Record<string, string>; mirror: boolean; query?: Record<string, string> }
@@ -100,7 +100,7 @@ function checkoutLines(show: Show) {
 function checkout(show: Show, req: SiteRequest, ctx: PageContext): SiteResponse {
   if (!req.mirror && show.site.darkPatterns) show.cart.insurance = req.query?.insurance !== 'no';
   const { lines, total } = checkoutLines(show);
-  return ok(checkoutPage(ctx, lines, show.cart, total));
+  return ok(checkoutPage(ctx, { lines, cart: show.cart, total }));
 }
 
 function pay(show: Show, req: SiteRequest, ctx: PageContext): SiteResponse {
@@ -111,7 +111,8 @@ function pay(show: Show, req: SiteRequest, ctx: PageContext): SiteResponse {
   }
   const { total } = checkoutLines(show);
   if (total > show.mission.budget && !show.approvedOverspend) {
-    return { status: 402, html: approvalPage(ctx, total) };
+    const { lines } = checkoutLines(show);
+    return { status: 402, html: checkoutPage(ctx, { lines, cart: show.cart, total, overBudget: true }) };
   }
   show.record('booking', { item: 'trip', label: 'Paid', price: total });
   return redirect('/site/done');

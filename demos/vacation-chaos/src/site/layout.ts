@@ -26,7 +26,7 @@ function newsBar(site: SiteMode): string {
 
 function normalHeader(ctx: PageContext): string {
   return `<header class="nav"><div class="wrap navrow"><a class="logo" href="/site" data-label="Home"><span class="sun"></span>SunnyHop</a>
-<div class="navright"><span>Explore</span><span>Help</span><span>English (US) · USD</span><span class="pill">Log in</span></div></div>
+<div class="navright"><span>Explore</span><span>Help</span><span>English (US) · USD</span><span class="user"><i>T</i>Tomer</span></div></div>
 <div class="wrap"><nav class="tabs">${tabs(ctx)}</nav>${searchBar(ctx)}</div></header>`;
 }
 

@@ -122,7 +122,7 @@ function captchaBox(state: string): string {
 
 function detailsForm(): string {
   const f = (label: string, value: string) => `<label><span>${label}</span><input value="${value}" readonly></label>`;
-  return `<div class="form">${f('Full name', 'Tomer (fictional)')}${f('Email', 'tomer@example.test')}${f('Card', '0000 0000 0000 0000 · fictional')}${f('Expiry', '12 / 99')}</div>`;
+  return `<div class="form">${f('Full name', 'Tomer Wave')}${f('Email', 'tomer@example.test')}${f('Saved card', 'Visa ending 0000 (demo)')}${f('Expiry', '12 / 99')}</div>`;
 }
 
 function insuranceBox(ctx: PageContext, cart: Cart): string {
@@ -130,11 +130,24 @@ function insuranceBox(ctx: PageContext, cart: Cart): string {
 <a class="decline" href="/site/checkout?insurance=no" data-label="No, I enjoy overpaying">No, I enjoy overpaying</a>`);
 }
 
-export function checkoutPage(ctx: PageContext, lines: CheckoutLine[], cart: Cart, total: number): string {
-  const rows = lines.map((l) => `<div class="line"><span>${esc(l.label)}</span><b>${money(l.price)}</b></div>`).join('');
-  return layout(ctx, 'Checkout', `<div class="split right"><div class="panel"><b class="sec">Your details</b>${detailsForm()}${captchaBox(ctx.site.captcha)}</div>
-<div class="panel summary"><b class="sec">Price summary</b>${rows}${insuranceBox(ctx, cart)}<div class="line total"><span>Total</span><b>${money(total)}</b></div><div class="line"><span>Budget</span><b>${money(ctx.mission.budget)}</b></div>
-<form id="pay" method="post" action="/site/pay"><button class="btn lg wide" data-label="Pay now">Pay now</button></form></div></div>`);
+export interface CheckoutView { lines: CheckoutLine[]; cart: Cart; total: number; overBudget?: boolean }
+
+function budgetNotice(ctx: PageContext, total: number): string {
+  return `<div class="notice" data-label="Trip budget notice">${ICONS.alert}<div><b>This trip is ${money(total - ctx.mission.budget)} over your trip budget</b>
+<span>Payment is paused. Trips over budget need approval from the account holder before you can pay.</span></div></div>`;
+}
+
+function budgetRow(ctx: PageContext, total: number): string {
+  const left = ctx.mission.budget - total;
+  const state = left < 0 ? 'over' : 'okline';
+  return `<div class="line ${state}"><span>Trip budget <small>saved in your account</small></span><b>${money(ctx.mission.budget)}</b></div>`;
+}
+
+export function checkoutPage(ctx: PageContext, view: CheckoutView): string {
+  const rows = view.lines.map((l) => `<div class="line"><span>${esc(l.label)}</span><b>${money(l.price)}</b></div>`).join('');
+  return layout(ctx, 'Checkout', `<div class="split right"><div class="panel"><b class="sec">Traveller details</b>${detailsForm()}${captchaBox(ctx.site.captcha)}</div>
+<div class="panel summary"><b class="sec">Price summary</b>${rows}${insuranceBox(ctx, view.cart)}<div class="line total"><span>Total</span><b>${money(view.total)}</b></div>${budgetRow(ctx, view.total)}
+${when(view.overBudget === true, budgetNotice(ctx, view.total))}<form id="pay" method="post" action="/site/pay"><button class="btn lg wide" data-label="Pay now">Pay now</button></form></div></div>`);
 }
 
 export function messagePage(ctx: PageContext, title: string, text: string, back: string): string {
@@ -144,14 +157,4 @@ export function messagePage(ctx: PageContext, title: string, text: string, back:
 export function donePage(ctx: PageContext, total: number): string {
   return layout(ctx, 'Booking confirmed', `<div class="panel center"><div class="okmark">${ICONS.check}</div><p class="lead">Confirmation SH-1337 · ${money(total)}</p>
 <p class="muted">No real money moved. This is a demo with a fictional card.</p></div>`);
-}
-
-export function approvalPage(ctx: PageContext, total: number): string {
-  const limit = ctx.mission.budget;
-  const row = (label: string, value: string, cls = '') => `<div class="line${cls}"><span>${label}</span><b>${value}</b></div>`;
-  return layout(ctx, 'Approval required', `<div class="split right"><div class="panel approval"><div class="approval-head"><span class="lockmark">${ICONS.lock}</span><div><b class="lead">This booking exceeds your account's spending limit</b>
-<p class="muted">We have sent an approval request to the account owner. Once they approve it, return to checkout to complete your payment.</p></div></div>
-<div class="status-pill">Waiting for account owner</div><div class="steps-mini"><span class="done">Trip selected</span><span class="done">Details confirmed</span><span class="now">Owner approval</span><span>Payment</span></div></div>
-<div class="panel summary"><b class="sec">Spending limit</b>${row('Trip total', money(total))}${row('Account limit', money(limit))}${row('Over limit by', money(total - limit), ' over')}
-<a class="btn lg wide" href="/site/checkout" data-label="Back to checkout">Back to checkout</a><a href="/site/hotels" data-label="Change trip">Change trip</a></div></div>`);
 }
