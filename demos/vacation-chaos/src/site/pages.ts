@@ -10,7 +10,9 @@ const adults = (n: number) => `${n} adult${n > 1 ? 's' : ''}`;
 const stars = (n: number) => `<span class="stars">${'&#9733;'.repeat(n)}</span>`;
 
 export function searchPage(ctx: PageContext): string {
-  const where = city(ctx.mission, ctx.site);
+  const where = city(ctx.site);
+  if (!where) return layout(ctx, 'Where to next?', `<div class="intro panel">${cityPhoto('')}<div class="intro-text"><p class="lead">Type a destination in Where to, then search.</p>
+<p class="muted">Flights and stays for ${ctx.mission.partySize} from Tel Aviv, 12 December. Prices include taxes.</p></div></div>`);
   return layout(ctx, `Trips to ${where}`, `<div class="intro panel">${cityPhoto(where)}<div class="intro-text"><p class="lead">Flights and stays for ${ctx.mission.partySize} from Tel Aviv, 12 December.</p>
 <p class="muted">Compare fares from 3 carriers and 3 properties. Prices include taxes.</p></div><a class="btn lg" href="/site/flights" ${act(`Search flights`)}>Search flights</a></div>
 <div class="grid3">${HOTELS.slice(0, 4).map((h) => `<div class="tile">${hotelPhoto(h, 'thumb')}<b>${esc(h.name)}</b><span class="muted">${esc(h.area)}</span></div>`).join('')}</div>`);
@@ -33,7 +35,7 @@ function flightAction(f: Flight, cancelled: boolean): string {
 function flightRow(f: Flight, ctx: PageContext): string {
   const cancelled = ctx.site.flightCancelled && f.id === 'direct';
   const timer = when(ctx.site.darkPatterns, '<span class="timer">Deal ends in 04:00</span>');
-  const dest = city(ctx.mission, ctx.site).slice(0, 3).toUpperCase();
+  const dest = city(ctx.site).slice(0, 3).toUpperCase();
   return `<div class="result panel${cancelled ? ' off' : ''}"><div class="carrier">${airlineMark(f)}<div><b>${esc(f.airline)}</b><span class="muted">${esc(f.code)}</span></div></div>
 <div class="leg"><b>${esc(f.depart)}</b><span class="muted">TLV</span></div><div class="path"><span class="muted">${esc(f.duration)}</span><i></i><span class="muted">${esc(f.stops)}</span></div>
 <div class="leg"><b>${esc(f.arrive)}</b><span class="muted">${dest}</span></div><div class="notes">${flightNotes(f, ctx)}<span class="muted">${esc(f.info)}</span></div>
@@ -52,18 +54,18 @@ function trend(): string {
 
 function stayPromo(ctx: PageContext): string {
   const items = HOTELS.slice(0, 3).map((h) => `<div class="mini">${hotelPhoto(h, 'mini-img')}<div><b>${esc(h.name)}</b><span class="muted">${h.score.toFixed(1)} ${esc(h.scoreLabel)}</span><span>${money(hotelPrice(h, ctx.mission, ctx.site))}</span></div></div>`).join('');
-  return `<div class="panel railcard"><b>Hotels in ${esc(city(ctx.mission, ctx.site))}</b>${items}</div>`;
+  return `<div class="panel railcard"><b>Hotels in ${esc(city(ctx.site))}</b>${items}</div>`;
 }
 
 export function flightsPage(ctx: PageContext): string {
   const side = filters([['Stops', ['Any', 'Direct only', '1 stop']], ['Departure', ['Any time', 'Morning', 'Night (red-eye)']], ['Airlines', FLIGHTS.map((f) => f.airline)]]);
-  return layout(ctx, `Tel Aviv to ${city(ctx.mission, ctx.site)}`, `<div class="split three">${side}<div class="list">${sortTabs(ctx)}${FLIGHTS.map((f) => flightRow(f, ctx)).join('')}</div><aside class="rail">${trend()}${stayPromo(ctx)}</aside></div>`);
+  return layout(ctx, `Tel Aviv to ${city(ctx.site)}`, `<div class="split three">${side}<div class="list">${sortTabs(ctx)}${FLIGHTS.map((f) => flightRow(f, ctx)).join('')}</div><aside class="rail">${trend()}${stayPromo(ctx)}</aside></div>`);
 }
 
 export function flightDetail(ctx: PageContext, f: Flight): string {
   const price = flightPrice(f, ctx.mission, ctx.site);
   return layout(ctx, `${f.airline} · ${f.code}`, `<div class="split right"><div class="panel itinerary"><div class="carrier">${airlineMark(f)}<div><b>${esc(f.airline)}</b><span class="muted">${esc(f.code)} · Economy</span></div></div>
-<div class="timeline"><div><b>${esc(f.depart)}</b><span>Tel Aviv (TLV)</span></div><div class="mid muted">${esc(f.duration)} · ${esc(f.stops)}</div><div><b>${esc(f.arrive)}</b><span>${esc(city(ctx.mission, ctx.site))}</span></div></div>
+<div class="timeline"><div><b>${esc(f.depart)}</b><span>Tel Aviv (TLV)</span></div><div class="mid muted">${esc(f.duration)} · ${esc(f.stops)}</div><div><b>${esc(f.arrive)}</b><span>${esc(city(ctx.site))}</span></div></div>
 <p class="muted">${esc(f.info)}</p><a href="/site/flights" ${act(`Back to flights`)}>Back to results</a></div>
 <div class="panel summary"><span class="muted">Total for ${adults(ctx.mission.partySize)}</span><strong class="price">${money(price)}</strong><span class="muted">Taxes and fees included</span>
 <form method="post" action="/site/flights/${f.id}/book"><button class="btn lg wide" ${act(`Book ${f.code}`)}>Book this flight</button></form></div></div>`);
@@ -83,7 +85,7 @@ function hotelRow(h: Hotel, ctx: PageContext): string {
 }
 
 export function hotelsPage(ctx: PageContext): string {
-  const where = city(ctx.mission, ctx.site);
+  const where = city(ctx.site);
   const side = `<div class="sidecol">${mapCard(where)}${filters([['Popular', ['Free cancellation', 'Sea view', 'Pool', 'Air conditioning']], ['Rating', ['Any', 'Very good 8+', 'Superb 9+']]])}</div>`;
   const sorts = `<div class="sorts"><span class="on"><b>Recommended</b>${HOTELS.length} properties</span><span><b>Lowest price</b>from ${money(Math.min(...HOTELS.map((h) => hotelPrice(h, ctx.mission, ctx.site))))}</span><span><b>Top reviewed</b>8+ rating</span></div>`;
   return layout(ctx, `Stays in ${where}`, `<div class="split">${side}<div class="list">${sorts}${HOTELS.map((h) => hotelRow(h, ctx)).join('')}</div></div>`);

@@ -1,5 +1,5 @@
 import type { Show } from '../show/engine.js';
-import { findFlight, findHotel, flightPrice, hotelPrice, type Hotel } from './inventory.js';
+import { city, cityFrom, findFlight, findHotel, flightPrice, hotelPrice, type Hotel } from './inventory.js';
 import { outagePage, type PageContext } from './layout.js';
 import { INSURANCE, checkoutPage, donePage, flightDetail, flightsPage, hotelDetail, hotelsPage, messagePage, searchPage } from './pages.js';
 import { beforeRequest } from './rules.js';
@@ -12,6 +12,7 @@ const redirect = (location: string): SiteResponse => ({ status: 303, html: '', l
 
 export async function handleSite(show: Show, req: SiteRequest): Promise<SiteResponse> {
   if (!req.mirror) {
+    if (req.query?.to) show.site.searched = cityFrom(req.query.to);
     beforeRequest(show, req);
     await show.sitePause();
     await show.waitForScreen();
@@ -52,7 +53,11 @@ function route(show: Show, req: SiteRequest, ctx: PageContext): SiteResponse {
 
 const writable = (req: SiteRequest) => req.method === 'POST' && !req.mirror;
 
-function flights({ show, req, ctx, id, action }: Route): SiteResponse {
+function flights(r: Route): SiteResponse {
+  return city(r.show.site) ? flightRoute(r) : ok(searchPage(r.ctx));
+}
+
+function flightRoute({ show, req, ctx, id, action }: Route): SiteResponse {
   const flight = id ? findFlight(id) : undefined;
   if (!flight) return ok(flightsPage(ctx));
   if (action !== 'book' || !writable(req)) return ok(flightDetail(ctx, flight));

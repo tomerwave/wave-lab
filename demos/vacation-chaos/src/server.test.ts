@@ -55,7 +55,7 @@ test('site routes render and redirect through the server', async (t) => {
   const { show, base, close } = await boot();
   t.after(close);
   show.prefillMission('Lisbon', null);
-  assert.equal((await fetch(`${base}/site/flights`)).status, 200);
+  assert.equal((await fetch(`${base}/site/flights?to=Lisbon`)).status, 200);
   const res = await fetch(`${base}/site/flights/goat/book`, { method: 'POST', redirect: 'manual', body: '', headers: { 'content-type': 'application/x-www-form-urlencoded' } });
   assert.equal(res.status, 303);
   assert.equal(res.headers.get('location'), '/site/hotels');
@@ -67,6 +67,13 @@ test('vote page hands out a voter cookie', async (t) => {
   assert.match((await fetch(`${base}/vote`)).headers.get('set-cookie') ?? '', /^vc_voter=/);
 });
 
+async function agentSearch(base: string, token: string): Promise<string> {
+  const entry = await fetch(`${base}/site?agent=${token}`, { redirect: 'manual' });
+  const cookie = entry.headers.get('set-cookie')!.split(';')[0]!;
+  await fetch(`${base}/site/flights?to=Lisbon`, { headers: { cookie } });
+  return cookie;
+}
+
 test('once an agent is launched, other browsers get a read-only site', async (t) => {
   const { show, base, close } = await boot();
   t.after(close);
@@ -77,8 +84,7 @@ test('once an agent is launched, other browsers get a read-only site', async (t)
   assert.equal(show.snapshot().booked.flight, null);
   await fetch(`${base}/api/beacon`, { method: 'POST', body: JSON.stringify({ label: 'hacked' }) });
   assert.equal(show.snapshot().lastClick, null);
-  const entry = await fetch(`${base}/site?agent=${token}`, { redirect: 'manual' });
-  const cookie = entry.headers.get('set-cookie')!.split(';')[0]!;
+  const cookie = await agentSearch(base, token);
   const agent = await fetch(`${base}/site/flights/goat/book`, { method: 'POST', redirect: 'manual', body: '', headers: { cookie } });
   assert.equal(agent.status, 303);
   assert.ok(show.snapshot().booked.flight);

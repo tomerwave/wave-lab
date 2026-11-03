@@ -24,6 +24,7 @@ export interface SiteMode {
   captcha: 'off' | 'pending' | 'solved';
   flightCancelled: boolean;
   avoidFlight: string | null;
+  searched: string | null;
 }
 
 export type TwistLook = 'news' | 'message' | 'alert' | 'status' | 'post';
@@ -68,5 +69,5 @@ export function freshMission(budget = START_BUDGET): Mission {
 }
 
 export function freshSite(): SiteMode {
-  return { news: null, skin: 'normal', fareMultiplier: 1, outageUntil: null, darkPatterns: false, haggle: false, captcha: 'off', flightCancelled: false, avoidFlight: null };
+  return { news: null, skin: 'normal', fareMultiplier: 1, outageUntil: null, darkPatterns: false, haggle: false, captcha: 'off', flightCancelled: false, avoidFlight: null, searched: null };
 }

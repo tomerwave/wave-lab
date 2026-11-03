@@ -21,7 +21,8 @@ function tabs(ctx: PageContext): string {
 function searchBar(ctx: PageContext): string {
   const m = ctx.mission;
   const field = (label: string, value: string) => `<div class="field"><span>${label}</span><b>${esc(value)}</b></div>`;
-  return `<div class="searchbar">${field('From', 'Tel Aviv (TLV)')}${field('To', city(m, ctx.site))}${field('Dates', `12 Dec · ${m.nights} night${m.nights === 1 ? '' : 's'}`)}${field('Travellers', `${m.partySize} adult${m.partySize > 1 ? 's' : ''} · Economy`)}<a class="btn search" href="/site/flights" ${act(`Search`)}>Search</a></div>`;
+  const to = `<label class="field"><span>Where to</span><input name="to" value="${esc(city(ctx.site))}" placeholder="Search a city" autocomplete="off" ${act(`Where to`)}></label>`;
+  return `<form class="searchbar" action="/site/flights" method="get">${field('From', 'Tel Aviv (TLV)')}${to}${field('Dates', `12 Dec · ${m.nights} night${m.nights === 1 ? '' : 's'}`)}${field('Travellers', `${m.partySize} adult${m.partySize > 1 ? 's' : ''} · Economy`)}<button class="btn search" ${act(`Search`)}>Search</button></form>`;
 }
 
 function newsBar(site: SiteMode): string {

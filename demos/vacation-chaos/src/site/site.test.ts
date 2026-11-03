@@ -10,6 +10,7 @@ function setup() {
   let now = 0;
   const show = new Show({ now: () => now, sleep: async (ms) => { now += ms; }, random: () => 0 });
   show.prefillMission('Lisbon', 'No red-eye flights');
+  show.site.searched = 'Lisbon';
   const get = (url: string, mirror = false) => {
     const [path = url, search = ''] = url.split('?');
     return handleSite(show, { method: 'GET', path, form: {}, mirror, query: Object.fromEntries(new URLSearchParams(search)) });
@@ -220,6 +221,20 @@ test('the agent page that sets off a twist waits until Mission Control has shown
   const slept: number[] = [];
   const show = new Show({ now: () => 0, sleep: async (ms) => { slept.push(ms); }, random: () => 0 });
   show.prefillMission('Lisbon', null);
-  await handleSite(show, { method: 'GET', path: '/site/flights', form: {}, mirror: false });
+  await handleSite(show, { method: 'GET', path: '/site/flights', form: {}, mirror: false, query: { to: 'Lisbon' } });
   assert.deepEqual(slept, [SITE_DELAY.story, SCREEN_MS.twist + SCREEN_MS.rest]);
+});
+
+test('the site never picks the destination: the agent types it into Where to and searches', async () => {
+  const show = new Show({ now: () => 0, sleep: async () => undefined, random: () => 0 });
+  show.prefillMission('Tokyo', null);
+  const get = (path: string, query: Record<string, string> = {}) => handleSite(show, { method: 'GET', path, form: {}, mirror: false, query });
+  const home = (await get('/site')).html;
+  assert.match(home, /<input name="to" value="" placeholder="Search a city"[^>]* id="where-to"/);
+  assert.doesNotMatch(home, /Tokyo/);
+  assert.match((await get('/site/flights')).html, /Where to next\?/);
+  assert.ok(!show.snapshot().applied.includes('oil-shock'));
+  const results = (await get('/site/flights', { to: 'tokyo, japan' })).html;
+  assert.match(results, /Tel Aviv to Tokyo/);
+  assert.ok(show.snapshot().applied.includes('oil-shock'));
 });

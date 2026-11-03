@@ -51,7 +51,7 @@ class Replay {
 async function flights(r: Replay, show: Show): Promise<void> {
   await r.go('/site', 'Search flights');
   await r.say(`Searching flights to ${show.mission.destination} for ${show.mission.partySize}.`);
-  await r.go('/site/flights', 'Search flights');
+  await r.go(`/site/flights?to=${encodeURIComponent(show.mission.destination === 'Cheapest' ? 'Eilat' : show.mission.destination ?? 'Lisbon')}`, 'Search');
   await r.say('Prices changed since the last page load. Reading the news bar.');
   let flight = r.pickFlight();
   await r.go(`/site/flights/${flight.id}`, `Select ${flight.code}`);

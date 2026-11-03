@@ -5,6 +5,7 @@ export interface Scenario { label: string; path: string; setup: (show: Show) => 
 function base(show: Show, ...twists: string[]): void {
   show.reset('idle');
   show.prefillMission('Lisbon', 'No red-eye flights');
+  show.site.searched = 'Lisbon';
   twists.forEach((id) => show.applyTwist(id));
 }
 

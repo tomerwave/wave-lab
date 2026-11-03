@@ -17,7 +17,7 @@ function hotelsLoaded(show: Show): void {
 
 const RULES: Rule[] = [
   { match: isGet(/^\/site\/?$/), run: (s) => s.checkpoint(3) },
-  { match: isGet(/^\/site\/flights\/?$/), run: (s) => { s.checkpoint(3); s.applyTwist('oil-shock'); s.checkpoint(4); } },
+  { match: isGet(/^\/site\/flights\/?$/), run: (s) => { if (!s.site.searched) return; s.checkpoint(3); s.applyTwist('oil-shock'); s.checkpoint(4); } },
   { match: isGet(/^\/site\/flights\/[a-z]+$/), run: (s) => openChaosVote(s, 0) },
   { match: (r) => r.method === 'POST' && /^\/site\/flights\/[a-z]+\/book$/.test(r.path), run: (s) => s.checkpoint(6) },
   { match: isGet(/^\/site\/hotels\/?$/), run: hotelsLoaded },

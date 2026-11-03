@@ -36,10 +36,10 @@ function Option({ vote, id, label, blurb }: { vote: ActiveVote; id: string; labe
 
 export function HeadsUpBanner({ vote, serverNow }: { vote: ActiveVote; serverNow: number }) {
   return (
-    <div className="fixed inset-x-0 top-0 z-30 flex animate-slide items-center gap-6 bg-red-600 px-8 py-4 text-white shadow-xl">
-      <span className="text-[clamp(28px,5vh,48px)] font-black tabular-nums">{seconds(vote.opensAt, serverNow)}</span>
-      <div className="flex-1"><b className="block text-[clamp(20px,3vh,30px)] font-bold">Crowd vote coming up. Phones out.</b><span className="text-lg text-red-100">{vote.question} · {voteHost}</span></div>
-      <span className="rounded-lg bg-white p-1.5"><Qr /></span>
+    <div className="fixed left-1/2 top-4 z-30 flex -translate-x-1/2 animate-slide items-center gap-3 rounded-lg border border-zinc-200 bg-white/95 px-4 py-2 text-sm shadow-md">
+      <i className="size-2 animate-blink rounded-full bg-red-500" />
+      <span className="font-medium">Crowd vote in {seconds(vote.opensAt, serverNow)}s</span>
+      <span className="text-zinc-500">{vote.question} · {voteHost}</span>
     </div>
   );
 }

@@ -71,20 +71,25 @@ export const HOTELS: Hotel[] = [
 
 const CITY_FACTOR: Record<string, number> = { Lisbon: 1, Tokyo: 1.4, Eilat: 0.7, Tehran: 0.5 };
 
-export function city(mission: Mission, site: SiteMode): string {
-  if (site.skin === 'takeover') return 'Tehran';
-  if (!mission.destination || mission.destination === 'Cheapest') return 'Eilat';
-  return mission.destination;
+const CITIES = Object.keys(CITY_FACTOR);
+
+export function cityFrom(typed: string): string {
+  const text = typed.trim().slice(0, 40);
+  return CITIES.find((c) => text.toLowerCase().includes(c.toLowerCase())) ?? text;
+}
+
+export function city(site: SiteMode): string {
+  return site.skin === 'takeover' ? 'Tehran' : site.searched ?? '';
 }
 
 export function flightPrice(flight: Flight, mission: Mission, site: SiteMode): number {
   const fuel = flight.fuel ? site.fareMultiplier : 1;
-  return Math.round(flight.base * (CITY_FACTOR[city(mission, site)] ?? 1) * fuel) * mission.partySize;
+  return Math.round(flight.base * (CITY_FACTOR[city(site)] ?? 1) * fuel) * mission.partySize;
 }
 
 export function hotelPrice(hotel: Hotel, mission: Mission, site: SiteMode): number {
   const rooms = Math.max(1, Math.ceil(mission.partySize / 2));
-  return Math.round(hotel.perNight * (CITY_FACTOR[city(mission, site)] ?? 1)) * mission.nights * rooms;
+  return Math.round(hotel.perNight * (CITY_FACTOR[city(site)] ?? 1)) * mission.nights * rooms;
 }
 
 export function findFlight(id: string): Flight | undefined { return FLIGHTS.find((f) => f.id === id); }
