@@ -6,7 +6,7 @@ type Rule = { match: (req: SiteRequest) => boolean; run: (show: Show) => void };
 const isGet = (path: RegExp) => (req: SiteRequest) => req.method === 'GET' && path.test(req.path);
 
 function openChaosVote(show: Show, nth: number): void {
-  if (show.chaosVotes === nth && show.mission.ready) show.openVote('chaos');
+  if (show.autoVotes && show.chaosVotes === nth && show.mission.ready) show.openVote('chaos');
 }
 
 function hotelsLoaded(show: Show): void {

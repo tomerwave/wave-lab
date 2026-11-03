@@ -1,3 +1,4 @@
+import { randomUUID } from 'node:crypto';
 import { CHAOS_POOL, DESTINATIONS, RULES, TWISTS } from './twists.js';
 import { freshMission, freshSite, type Mission, type Pace, type RunMode, type SiteMode, type VoteOption } from './types.js';
 
@@ -49,8 +50,10 @@ export class Show {
   private voters = new Map<string, string>();
   private inbox: string[] = [];
   private listeners = new Set<(s: Snapshot) => void>();
-  private waiters: Array<() => void> = [];
-  private askResolve: ((text: string) => void) | null = null;
+  private waiters: Array<{ resolve: () => void; reject: (e: Error) => void }> = [];
+  private pendingAnswer: { promise: Promise<string>; resolve: (text: string) => void; reject: (e: Error) => void } | null = null;
+  private autoVotesOn = true;
+  private token: string | null = null;
   lastWinners: string[] = [];
 
   constructor(opts: ShowOptions = {}) {
@@ -93,8 +96,27 @@ export class Show {
     };
     this.voters.clear();
     this.inbox = [];
-    this.askResolve = null;
+    this.autoVotesOn = true;
+    this.token = null;
+    this.endRun();
     this.record('reset', { runMode });
+  }
+
+  get autoVotes(): boolean { return this.autoVotesOn; }
+  setAutoVotes(on: boolean): void { this.autoVotesOn = on; }
+  get agentToken(): string | null { return this.token; }
+
+  issueAgentToken(): string {
+    this.token = randomUUID();
+    return this.token;
+  }
+
+  private endRun(): void {
+    const ended = new Error('run ended');
+    this.waiters.splice(0).forEach((w) => w.reject(ended));
+    this.pendingAnswer?.reject(ended);
+    this.pendingAnswer?.promise.catch(() => undefined);
+    this.pendingAnswer = null;
   }
 
   setPace(pace: Pace): void { this.state.pace = pace; this.changed(); }
@@ -111,8 +133,9 @@ export class Show {
     this.markReady();
   }
 
-  openVote(target: VoteTarget, optionIds?: string[]): ActiveVote {
+  openVote(target: VoteTarget, optionIds?: string[]): ActiveVote | null {
     const options = this.optionsFor(target, optionIds);
+    if (!options.length) return null;
     const vote: ActiveVote = {
       id: `${target}-${this.now()}`, target, question: QUESTIONS[target], options,
       tally: Object.fromEntries(options.map((o) => [o.id, 0])), total: 0, closesAt: this.now() + VOTE_MS,
@@ -152,7 +175,12 @@ export class Show {
   }
 
   tick(): void {
-    if (this.state.vote && this.now() >= this.state.vote.closesAt) this.closeVote();
+    try {
+      if (this.state.vote && this.now() >= this.state.vote.closesAt) this.closeVote();
+    } catch (error) {
+      this.state.vote = null;
+      this.record('step', { kind: 'Error', text: error instanceof Error ? error.message : 'vote failed' });
+    }
   }
 
   applyTwist(id: string): void {
@@ -193,17 +221,21 @@ export class Show {
 
   ask(question: string): Promise<string> {
     this.state.telemetry.toolCalls += 1;
+    if (this.pendingAnswer) return this.pendingAnswer.promise;
     this.state.pendingAsk = question;
     this.record('ask', { question });
-    return new Promise((resolve) => { this.askResolve = resolve; });
+    let resolve!: (text: string) => void, reject!: (e: Error) => void;
+    const promise = new Promise<string>((res, rej) => { resolve = res; reject = rej; });
+    this.pendingAnswer = { promise, resolve, reject };
+    return promise;
   }
 
   answer(text: string, approveSpend = false): void {
     if (approveSpend) this.state.approvedOverspend = true;
     this.state.pendingAsk = null;
     this.record('answer', { text, approveSpend });
-    this.askResolve?.(text);
-    this.askResolve = null;
+    this.pendingAnswer?.resolve(text);
+    this.pendingAnswer = null;
   }
 
   book(item: 'flight' | 'hotel', label: string, price: number): void {
@@ -231,7 +263,7 @@ export class Show {
   }
 
   async waitUntilFree(): Promise<void> {
-    while (!this.state.mission.ready || this.state.vote) await new Promise<void>((r) => this.waiters.push(r));
+    while (!this.state.mission.ready || this.state.vote) await new Promise<void>((resolve, reject) => this.waiters.push({ resolve, reject }));
   }
 
   private async reply(delayMs: number): Promise<ToolReply> {
@@ -287,7 +319,7 @@ export class Show {
 
   private changed(): void {
     const waiters = this.waiters.splice(0);
-    waiters.forEach((w) => w());
+    waiters.forEach((w) => w.resolve());
     if (!this.listeners.size) return;
     const snap = this.snapshot();
     this.listeners.forEach((fn) => fn(snap));

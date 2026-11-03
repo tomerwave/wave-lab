@@ -62,7 +62,7 @@ test('think blocks until opening votes finish', async () => {
 test('think blocks while a chaos vote is open then returns its inbox', async () => {
   const h = harness();
   finishOpening(h);
-  const vote = h.show.openVote('chaos');
+  const vote = h.show.openVote('chaos')!;
   let done = false;
   const reply = h.show.think('Picking a flight.').then((r) => { done = true; return r; });
   await h.flush();
@@ -86,9 +86,9 @@ test('story pace sleeps 2500ms per think, turbo 0', async () => {
 test('chaos vote never offers an already applied twist', () => {
   const h = harness();
   finishOpening(h);
-  const first = h.show.openVote('chaos');
+  const first = h.show.openVote('chaos')!;
   const winner = h.show.closeVote();
-  const second = h.show.openVote('chaos');
+  const second = h.show.openVote('chaos')!;
   assert.equal(first.options.length, 3);
   assert.ok(!second.options.some((o) => o.id === winner));
 });
@@ -118,8 +118,40 @@ test('flight-only twists leave the pool once a flight is booked', () => {
   finishOpening(h);
   h.show.book('flight', 'LY 375', 640);
   for (let i = 0; i < 4; i++) {
-    const vote = h.show.openVote('chaos');
+    const vote = h.show.openVote('chaos')!;
     assert.ok(!vote.options.some((o) => o.id === 'strike' || o.id === 'ex'));
     h.show.closeVote();
   }
+});
+
+test('reset cancels tool calls waiting from the previous run', async () => {
+  const h = harness();
+  h.show.beginOpening();
+  const stale = h.show.think('old run');
+  h.show.reset('local');
+  await assert.rejects(stale, /run ended/);
+});
+
+test('a repeated ask reuses the pending question', async () => {
+  const h = harness();
+  const first = h.show.ask('Approve?');
+  const second = h.show.ask('Approve?');
+  h.show.answer('Yes');
+  assert.equal(await first, 'Yes');
+  assert.equal(await second, 'Yes');
+});
+
+test('reset rejects an unanswered ask', async () => {
+  const h = harness();
+  const ask = h.show.ask('Approve?');
+  h.show.reset('idle');
+  await assert.rejects(ask, /run ended/);
+});
+
+test('an empty chaos pool opens no vote and tick never throws', () => {
+  const h = harness();
+  finishOpening(h);
+  for (let i = 0; i < 12; i++) { h.show.openVote('chaos'); h.show.closeVote(); }
+  assert.equal(h.show.openVote('chaos'), null);
+  assert.doesNotThrow(() => h.advance(60_000));
 });

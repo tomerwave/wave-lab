@@ -35,7 +35,7 @@ const SECTIONS: Record<string, (r: Route) => SiteResponse> = {
   flights: (r) => flights(r),
   hotels: (r) => hotels(r),
   checkout: (r) => checkout(r.show, r.req, r.ctx),
-  pay: (r) => (r.req.method === 'POST' ? pay(r.show, r.req, r.ctx) : ok(searchPage(r.ctx))),
+  pay: (r) => (writable(r.req) ? pay(r.show, r.req, r.ctx) : ok(searchPage(r.ctx))),
   done: (r) => ok(donePage(r.ctx, r.show.spent())),
 };
 
@@ -45,10 +45,12 @@ function route(show: Show, req: SiteRequest, ctx: PageContext): SiteResponse {
   return handler({ show, req, ctx, id, action });
 }
 
-function flights({ show, ctx, id, action }: Route): SiteResponse {
+const writable = (req: SiteRequest) => req.method === 'POST' && !req.mirror;
+
+function flights({ show, req, ctx, id, action }: Route): SiteResponse {
   const flight = id ? findFlight(id) : undefined;
   if (!flight) return ok(flightsPage(ctx));
-  if (action !== 'book') return ok(flightDetail(ctx, flight));
+  if (action !== 'book' || !writable(req)) return ok(flightDetail(ctx, flight));
   if (show.site.flightCancelled && flight.id === 'direct') return { status: 409, html: messagePage(ctx, 'Flight cancelled', 'This flight was cancelled because of the strike. Pick another one.', '/site/flights') };
   show.book('flight', `${flight.code} · ${flight.times}`, flightPrice(flight, show.mission, show.site));
   return redirect('/site/hotels');
@@ -66,8 +68,8 @@ function hotels(r: Route): SiteResponse {
 function hotelRoute({ show, req, ctx, id, action }: Route): SiteResponse {
   const hotel = id ? findHotel(id) : undefined;
   if (!hotel) return ok(hotelsPage(ctx));
-  if (action === 'haggle' && req.method === 'POST') return haggle(show, hotel, Number(req.form.offer), ctx);
-  if (action !== 'book') return ok(hotelDetail(ctx, hotel, show.cart));
+  if (action === 'haggle' && writable(req)) return haggle(show, hotel, Number(req.form.offer), ctx);
+  if (action !== 'book' || !writable(req)) return ok(hotelDetail(ctx, hotel, show.cart));
   show.book('hotel', hotel.name, currentHotelPrice(show, hotel));
   return redirect('/site/checkout');
 }

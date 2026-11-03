@@ -6,6 +6,15 @@ import type { Show, ToolReply } from './show/engine.js';
 
 const asText = (value: ToolReply | Record<string, unknown>) => ({ content: [{ type: 'text' as const, text: JSON.stringify(value) }] });
 
+export const ASK_HEARTBEAT_MS = 60_000;
+
+async function askWithHeartbeat(show: Show, question: string): Promise<Record<string, unknown>> {
+  let timer: NodeJS.Timeout | undefined;
+  const waiting = new Promise<null>((resolve) => { timer = setTimeout(() => resolve(null), ASK_HEARTBEAT_MS); });
+  const answer = await Promise.race([show.ask(question), waiting]).finally(() => clearTimeout(timer));
+  return answer === null ? { answer: null, note: 'The presenter has not answered yet. Call ask_presenter again with the same question.' } : { answer };
+}
+
 export function buildMcpServer(show: Show): McpServer {
   const server = new McpServer({ name: 'vacation-chaos-show', version: '1.0.0' });
   server.registerTool('think_aloud', {
@@ -19,7 +28,7 @@ export function buildMcpServer(show: Show): McpServer {
   server.registerTool('ask_presenter', {
     description: 'Ask the human presenter a question and wait for the answer. Use it before paying over budget and whenever a human check (CAPTCHA) appears.',
     inputSchema: { question: z.string().min(1).max(300) },
-  }, async ({ question }) => asText({ answer: await show.ask(question) }));
+  }, async ({ question }) => asText(await askWithHeartbeat(show, question)));
   server.registerTool('report_booking', {
     description: 'Tell Mission Control what you just booked on the site, with the total price shown on the page.',
     inputSchema: { item: z.enum(['flight', 'hotel']), label: z.string().min(1).max(120), price: z.number().nonnegative() },

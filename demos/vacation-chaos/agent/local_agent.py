@@ -27,7 +27,10 @@ class Telemetry:
             headers={"content-type": "application/json", "x-presenter-key": self.settings.presenter_key},
             method="POST",
         )
-        urllib.request.urlopen(request, timeout=5).close()
+        try:
+            urllib.request.urlopen(request, timeout=5).close()
+        except OSError as error:
+            say(f"Telemetry skipped: {error}")
 
     def after_model(self, event: AfterModelCallEvent) -> None:
         metrics = event.agent.event_loop_metrics
@@ -46,13 +49,13 @@ def build_browser(settings: config.Settings):
 def main() -> None:
     settings = config.load()
     telemetry = Telemetry(settings)
-    show_tools = MCPClient(lambda: streamable_http_client(f"{settings.show_url}/mcp/{settings.presenter_key}"))
+    show_tools = MCPClient(lambda: streamable_http_client(settings.mcp_url))
     model = BedrockModel(model_id=settings.model_id, region_name=settings.region, max_tokens=2048)
     browser = build_browser(settings)
     with show_tools:
         agent = Agent(model=model, system_prompt=PROMPT, tools=[browser.browser, *show_tools.list_tools_sync()])
         agent.hooks.add_callback(AfterModelCallEvent, telemetry.after_model)
-        result = agent(f"Start the mission. The SunnyHop site is at {settings.show_url}/site")
+        result = agent(settings.start_message)
     say(str(result))
 
 

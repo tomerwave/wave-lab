@@ -58,19 +58,25 @@ def ensure_role(settings: config.Settings, account: str) -> str:
     return arn
 
 
+def tools(settings: config.Settings) -> list:
+    return [
+        {"type": "agentcore_browser", "name": "browser", "config": {"agentCoreBrowser": {}}},
+        {"type": "remote_mcp", "name": "show", "config": {"remoteMcp": {"url": settings.mcp_url}}},
+    ]
+
+
 def harness_config(settings: config.Settings) -> dict:
     return {
         "model": {"bedrockModelConfig": {"modelId": settings.model_id, "maxTokens": 2048}},
         "systemPrompt": [{"text": PROMPT}],
-        "tools": [
-            {"type": "agentcore_browser", "name": "browser", "config": {"agentCoreBrowser": {}}},
-            {"type": "remote_mcp", "name": "show", "config": {"remoteMcp": {"url": f"{settings.show_url}/mcp/{settings.presenter_key}"}}},
-        ],
-        "memory": {"managedMemoryConfiguration": {"strategies": ["USER_PREFERENCE"]}},
+        "tools": tools(settings),
         "maxIterations": 80,
         "maxTokens": 2048,
         "timeoutSeconds": 900,
     }
+
+
+MEMORY = {"managedMemoryConfiguration": {"strategies": ["USER_PREFERENCE"]}}
 
 
 def find_harness(control, name: str) -> dict | None:
@@ -101,7 +107,7 @@ def deploy(settings: config.Settings) -> None:
         harness_id = existing["harnessId"]
         control.update_harness(harnessId=harness_id, executionRoleArn=role, **harness_config(settings))
     else:
-        harness_id = control.create_harness(harnessName=settings.harness_name, executionRoleArn=role, **harness_config(settings))["harness"]["harnessId"]
+        harness_id = control.create_harness(harnessName=settings.harness_name, executionRoleArn=role, memory=MEMORY, **harness_config(settings))["harness"]["harnessId"]
     harness = wait_ready(control, harness_id)
     say(f"Ready: {harness['arn']}")
 
@@ -111,7 +117,10 @@ def post_telemetry(settings: config.Settings, payload: dict) -> None:
         f"{settings.show_url}/api/telemetry", data=json.dumps(payload).encode(), method="POST",
         headers={"content-type": "application/json", "x-presenter-key": settings.presenter_key},
     )
-    urllib.request.urlopen(request, timeout=5).close()
+    try:
+        urllib.request.urlopen(request, timeout=5).close()
+    except OSError as error:
+        say(f"Telemetry skipped: {error}")
 
 
 def report(settings: config.Settings, event: dict, model: str) -> None:
@@ -143,8 +152,8 @@ def invoke(settings: config.Settings, model: str | None) -> None:
     session = f"vacation-chaos-{uuid.uuid4()}"
     say(f"Session {session}")
     response = data.invoke_harness(
-        harnessArn=harness_arn(settings), runtimeSessionId=session, actorId=ACTOR,
-        messages=[{"role": "user", "content": [{"text": f"Start the mission. The SunnyHop site is at {settings.show_url}/site"}]}],
+        harnessArn=harness_arn(settings), runtimeSessionId=session, actorId=ACTOR, tools=tools(settings),
+        messages=[{"role": "user", "content": [{"text": settings.start_message}]}],
         **extra,
     )
     follow(settings, response["stream"], model or settings.model_id)

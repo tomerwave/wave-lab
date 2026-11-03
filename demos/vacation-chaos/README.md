@@ -19,10 +19,12 @@ bookings, no real card, no real money.
 ```bash
 npm ci
 cd demos/vacation-chaos/agent && uv sync && uv run playwright install chromium && cd -
-PRESENTER_KEY=demo npm start -w @tomerwave/vacation-chaos
+export PRESENTER_KEY=$(openssl rand -hex 12)
+npm start -w @tomerwave/vacation-chaos
 ```
 
-Open `http://localhost:4545/control` and press `P`. The presenter key is `demo`.
+Open `http://localhost:4545/control`, press `P` and paste the presenter key. On a public URL the server
+refuses keys shorter than 16 characters, because anyone with the URL could otherwise run the show.
 
 ### Three ways to run the show
 
@@ -42,17 +44,17 @@ AgentCore Browser runs in AWS, so it needs a public URL for the show server. Pho
 
 ```bash
 npm run tunnel -w @tomerwave/vacation-chaos          # prints https://<random>.trycloudflare.com
-PUBLIC_URL=https://<random>.trycloudflare.com PRESENTER_KEY=demo npm start -w @tomerwave/vacation-chaos
+PUBLIC_URL=https://<random>.trycloudflare.com npm start -w @tomerwave/vacation-chaos
 cd demos/vacation-chaos/agent
-SHOW_URL=https://<random>.trycloudflare.com PRESENTER_KEY=demo uv run python harness.py deploy
-SHOW_URL=https://<random>.trycloudflare.com PRESENTER_KEY=demo uv run python seed_memory.py
+SHOW_URL=https://<random>.trycloudflare.com uv run python harness.py deploy
+SHOW_URL=https://<random>.trycloudflare.com uv run python seed_memory.py
 ```
 
 `harness.py deploy` creates a least-privilege execution role, then creates or updates the
 `vacation_chaos` harness. The harness has the Bedrock model, the system prompt from `prompt.md`, the
 AgentCore Browser tool, the show's MCP tools as a remote MCP server, managed memory, and explicit
-iteration, token and timeout limits. The tunnel URL changes on every run, so re-run `deploy` after
-starting a new tunnel.
+iteration, token and timeout limits. Each invocation passes the current show URL as a tools override,
+so a new tunnel URL does not need a redeploy.
 
 Environment variables for the agent: `SHOW_URL`, `PRESENTER_KEY`, `MODEL_ID` (default
 `us.anthropic.claude-sonnet-4-6`), `AWS_REGION` (default `us-east-1`), and `BROWSER=agentcore`, which lets
@@ -82,6 +84,14 @@ the local agent use AgentCore Browser without deploying anything.
   `ask_presenter`, `report_booking`, `finish`). Storytelling pace slows the show by holding the
   `think_aloud` reply on the server, not by slowing the model.
 - Replay mode is a script, labeled "Replay" in the run line. Live mode is labeled "Live".
+
+## Who can change the show
+
+Once an agent is launched, the server issues a per-launch agent token. The agent's first page
+(`/site?agent=<token>`) sets a cookie. Every other browser, including an audience member who opens
+`/site`, gets a read-only view, so nobody else can book or fire twists. The MCP URL carries the presenter
+key and the same token, so a killed agent's leftover cloud session is refused (HTTP 410). The presenter
+API needs the key. Phones can only vote.
 
 ## Limitations
 

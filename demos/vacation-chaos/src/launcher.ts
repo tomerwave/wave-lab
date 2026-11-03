@@ -2,6 +2,7 @@ import { spawn, type ChildProcess } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 import { agentEnvironment, type ShowConfig } from './config.js';
 import { writeLine } from './output.js';
+import type { Show } from './show/engine.js';
 
 const AGENT_DIR = fileURLToPath(new URL('../agent/', import.meta.url));
 const COMMANDS: Record<string, string[]> = {
@@ -14,12 +15,13 @@ export class AgentLauncher {
 
   constructor(private readonly config: ShowConfig) {}
 
-  launch(runtime: string, extraArgs: string[] = []): boolean {
+  launch(show: Show, runtime: string, extraArgs: string[] = []): boolean {
     const args = COMMANDS[runtime];
     if (!args) return false;
     this.stop();
     const showUrl = runtime === 'local' ? `http://localhost:${this.config.port}` : this.config.publicUrl;
-    this.child = spawn('uv', [...args, ...extraArgs], { cwd: AGENT_DIR, env: agentEnvironment(this.config, showUrl), stdio: ['ignore', 'pipe', 'pipe'] });
+    const env = { ...agentEnvironment(this.config, showUrl), AGENT_TOKEN: show.issueAgentToken() };
+    this.child = spawn('uv', [...args, ...extraArgs], { cwd: AGENT_DIR, env, stdio: ['ignore', 'pipe', 'pipe'] });
     this.child.stdout?.on('data', (d: Buffer) => writeLine(`[agent] ${d.toString().trimEnd()}`));
     this.child.stderr?.on('data', (d: Buffer) => writeLine(`[agent] ${d.toString().trimEnd()}`));
     this.child.on('exit', (code) => writeLine(`[agent] exited with ${code}`));

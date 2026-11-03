@@ -9,11 +9,15 @@ export interface ShowConfig {
 export function loadConfig(): ShowConfig {
   const port = Number(process.env.PORT ?? 4545);
   if (!Number.isInteger(port) || port <= 0) throw new Error('PORT must be a positive integer.');
-  return {
-    port,
-    publicUrl: (process.env.PUBLIC_URL ?? `http://localhost:${port}`).replace(/\/$/, ''),
-    presenterKey: process.env.PRESENTER_KEY ?? randomBytes(4).toString('hex'),
-  };
+  const publicUrl = (process.env.PUBLIC_URL ?? `http://localhost:${port}`).replace(/\/$/, '');
+  const presenterKey = process.env.PRESENTER_KEY ?? randomBytes(12).toString('hex');
+  checkKey(presenterKey, publicUrl);
+  return { port, publicUrl, presenterKey };
+}
+
+export function checkKey(key: string, publicUrl: string): void {
+  const local = /^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/.test(publicUrl);
+  if (!local && key.length < 16) throw new Error('PRESENTER_KEY must be at least 16 characters when PUBLIC_URL is public.');
 }
 
 export function agentEnvironment(config: ShowConfig, showUrl: string): Record<string, string> {

@@ -117,3 +117,23 @@ test('no emoji in any rendered page', async () => {
     assert.doesNotMatch((await get(path, true)).html, emoji, path);
   }
 });
+
+test('mirror requests cannot book anything', async () => {
+  const { show } = setup();
+  await handleSite(show, { method: 'POST', path: '/site/flights/goat/book', form: {}, mirror: true });
+  assert.equal(show.snapshot().booked.flight, null);
+});
+
+test('a GET on a book path does not book', async () => {
+  const { show, get } = setup();
+  await get('/site/flights/goat/book');
+  assert.equal(show.snapshot().booked.flight, null);
+});
+
+test('with auto votes off the site never opens chaos votes', async () => {
+  const { show, get } = setup();
+  show.setAutoVotes(false);
+  await get('/site/flights');
+  await get('/site/flights/redeye');
+  assert.equal(show.snapshot().vote, null);
+});

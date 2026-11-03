@@ -60,3 +60,33 @@ test('site routes render and redirect through the server', async (t) => {
   assert.equal(res.status, 303);
   assert.equal(res.headers.get('location'), '/site/hotels');
 });
+
+test('vote page hands out a voter cookie', async (t) => {
+  const { base, close } = await boot();
+  t.after(close);
+  assert.match((await fetch(`${base}/vote`)).headers.get('set-cookie') ?? '', /^vc_voter=/);
+});
+
+test('once an agent is launched, other browsers get a read-only site', async (t) => {
+  const { show, base, close } = await boot();
+  t.after(close);
+  show.prefillMission('Lisbon', null);
+  const token = show.issueAgentToken();
+  const outsider = await fetch(`${base}/site/flights/goat/book`, { method: 'POST', redirect: 'manual', body: '' });
+  assert.equal(outsider.status, 200);
+  assert.equal(show.snapshot().booked.flight, null);
+  await fetch(`${base}/api/beacon`, { method: 'POST', body: JSON.stringify({ label: 'hacked' }) });
+  assert.equal(show.snapshot().lastClick, null);
+  const entry = await fetch(`${base}/site?agent=${token}`, { redirect: 'manual' });
+  const cookie = entry.headers.get('set-cookie')!.split(';')[0]!;
+  const agent = await fetch(`${base}/site/flights/goat/book`, { method: 'POST', redirect: 'manual', body: '', headers: { cookie } });
+  assert.equal(agent.status, 303);
+  assert.ok(show.snapshot().booked.flight);
+});
+
+test('mcp calls with a stale agent token are refused', async (t) => {
+  const { show, base, close } = await boot();
+  t.after(close);
+  show.issueAgentToken();
+  assert.equal((await fetch(`${base}/mcp/k/stale`, { method: 'POST', body: '{}' })).status, 410);
+});

@@ -4,7 +4,7 @@ import { extname, join, normalize } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import QRCode from 'qrcode';
 import type { ShowConfig } from './config.js';
-import { CONTENT_TYPES, readForm, readJson, send, sendJson, voterId } from './http.js';
+import { CONTENT_TYPES, readForm, readJson, send, sendJson, voterCookie, voterId } from './http.js';
 import { createMcpHandler } from './mcp.js';
 import { AgentLauncher } from './launcher.js';
 import { ACTIONS } from './presenter.js';
@@ -40,21 +40,42 @@ async function serveStatic(res: ServerResponse, path: string): Promise<void> {
   res.end(body);
 }
 
+const cookieToken = (req: IncomingMessage) => /(?:^|;\s*)vc_agent=([\w-]+)/.exec(req.headers.cookie ?? '')?.[1];
+
+function isAgent(show: Show, req: IncomingMessage, url?: URL): boolean {
+  const token = show.agentToken;
+  return !token || cookieToken(req) === token || url?.searchParams.get('agent') === token;
+}
+
 async function site(show: Show, req: IncomingMessage, res: ServerResponse, url: URL): Promise<void> {
   const form = req.method === 'POST' ? await readForm(req) : {};
+  const agent = isAgent(show, req, url);
   const out = await handleSite(show, {
     method: req.method ?? 'GET', path: url.pathname.replace(/\/$/, '') || '/site', form,
-    mirror: url.searchParams.get('mirror') === '1', query: Object.fromEntries(url.searchParams),
+    mirror: url.searchParams.get('mirror') === '1' || !agent, query: Object.fromEntries(url.searchParams),
   });
-  if (out.location) return send(res, out.status, '', { headers: { location: out.location } });
-  send(res, out.status, out.html);
+  const headers: Record<string, string> = show.agentToken && agent ? { 'set-cookie': `vc_agent=${show.agentToken}; Path=/; SameSite=Lax` } : {};
+  if (out.location) return send(res, out.status, '', { headers: { ...headers, location: out.location } });
+  send(res, out.status, out.html, { headers });
+}
+
+async function beacon(show: Show, req: IncomingMessage, res: ServerResponse): Promise<void> {
+  const body = await readJson(req);
+  if (isAgent(show, req)) show.record('click', { label: String(body.label ?? '').slice(0, 80) });
+  sendJson(res, 200, {});
+}
+
+function mcpAllowed(show: Show, url: URL, key: string): number {
+  const [, , pathKey, token] = url.pathname.split('/');
+  if (pathKey !== key) return 404;
+  return token && show.agentToken && token !== show.agentToken ? 410 : 200;
 }
 
 async function vote(show: Show, req: IncomingMessage, res: ServerResponse): Promise<void> {
   const body = await readJson(req);
   const voter = voterId(req);
   show.castVote(voter.id, String(body.optionId ?? ''));
-  const cookie = voter.fresh ? { 'set-cookie': `vc_voter=${voter.id}; Path=/; Max-Age=86400; SameSite=Lax` } : undefined;
+  const cookie = voter.fresh ? { 'set-cookie': voterCookie(voter.id) } : undefined;
   sendJson(res, 200, publicState(show), cookie);
 }
 
@@ -72,17 +93,21 @@ export function createShowServer(show: Show, config: ShowConfig, launcher = new 
   const routes: Array<[RegExp, Handler]> = [
     [/^\/$/, (_q, res) => send(res, 302, '', { headers: { location: '/control' } })],
     [/^\/control$/, (_q, res) => send(res, 200, controlPage(meta))],
-    [/^\/vote$/, (_q, res) => send(res, 200, votePage())],
+    [/^\/vote$/, (req, res) => { const v = voterId(req); send(res, 200, votePage(), { headers: v.fresh ? { 'set-cookie': voterCookie(v.id) } : {} }); }],
     [/^\/events$/, (req, res) => streamEvents(show, req, res)],
     [/^\/api\/state$/, (_q, res) => sendJson(res, 200, publicState(show))],
     [/^\/api\/vote$/, (req, res) => vote(show, req, res)],
-    [/^\/api\/beacon$/, async (req, res) => { const b = await readJson(req); show.record('click', { label: String(b.label ?? '').slice(0, 80) }); sendJson(res, 200, {}); }],
+    [/^\/api\/beacon$/, (req, res) => beacon(show, req, res)],
     [/^\/api\/presenter\/[\w-]+$/, (req, res, url) => (authed(req) ? presenter({ show, launcher }, req, res, url.pathname.split('/').pop()!) : sendJson(res, 401, { error: 'presenter key required' }))],
     [/^\/api\/telemetry$/, async (req, res) => { if (!authed(req)) return sendJson(res, 401, {}); show.addTelemetry(await readJson(req)); sendJson(res, 200, {}); }],
     [/^\/qr\.svg$/, async (_q, res) => send(res, 200, await QRCode.toString(`${config.publicUrl}/vote`, { type: 'svg', margin: 0, color: { dark: '#2b3138', light: '#faf6ef' } }), { type: 'image/svg+xml' })],
     [/^\/static\//, (_q, res, url) => serveStatic(res, url.pathname.slice('/static/'.length))],
     [/^\/site(\/|$)/, (req, res, url) => site(show, req, res, url)],
-    [/^\/mcp\/[\w-]+$/, async (req, res, url) => (url.pathname.endsWith(`/${config.presenterKey}`) ? mcp(req, res, req.method === 'POST' ? await readJson(req) : undefined) : send(res, 404, 'Not found'))],
+    [/^\/mcp\/[\w-]+(\/[\w-]+)?$/, async (req, res, url) => {
+      const status = mcpAllowed(show, url, config.presenterKey);
+      if (status !== 200) return send(res, status, status === 410 ? 'This agent session has ended' : 'Not found');
+      await mcp(req, res, req.method === 'POST' ? await readJson(req) : undefined);
+    }],
   ];
   const ticker = setInterval(() => show.tick(), 250);
   const server = createServer((req, res) => {

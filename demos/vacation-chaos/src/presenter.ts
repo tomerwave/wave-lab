@@ -10,17 +10,24 @@ type Action = (show: Show, body: Payload, launcher: AgentLauncher) => unknown;
 const str = (v: unknown) => (typeof v === 'string' ? v : undefined);
 const runModes: RunMode[] = ['replay', 'local', 'agentcore'];
 
+function replay(show: Show): void {
+  runReplay(show, (req) => handleSite(show, req)).catch((error: unknown) => {
+    if (!(error instanceof Error && error.message === 'run ended')) show.record('step', { kind: 'Error', text: String(error) });
+  });
+}
+
 function startReplay(show: Show): void {
   show.reset('replay');
+  show.issueAgentToken();
   show.beginOpening();
-  void runReplay(show, (req) => handleSite(show, req));
+  replay(show);
 }
 
 function startLive(show: Show, body: Payload, launcher: AgentLauncher): void {
   const mode = runModes.find((m) => m === str(body.runtime)) ?? 'local';
   show.reset(mode);
   show.beginOpening();
-  if (body.launch !== false) launcher.launch(mode);
+  if (body.launch !== false) launcher.launch(show, mode);
 }
 
 function startTurbo(show: Show, body: Payload, launcher: AgentLauncher): void {
@@ -29,10 +36,11 @@ function startTurbo(show: Show, body: Payload, launcher: AgentLauncher): void {
   const mode = runModes.find((m) => m === str(body.runtime)) ?? show.snapshot().runMode;
   show.reset(mode === 'idle' ? 'replay' : mode);
   show.setPace('turbo');
+  show.setAutoVotes(false);
   show.prefillMission(last.destination ?? 'Lisbon', last.rule);
   winners.forEach((id) => show.applyTwist(id));
-  if (show.snapshot().runMode === 'replay') void runReplay(show, (req) => handleSite(show, req));
-  else launcher.launch(show.snapshot().runMode);
+  if (show.snapshot().runMode === 'replay') { show.issueAgentToken(); replay(show); }
+  else launcher.launch(show, show.snapshot().runMode);
 }
 
 export const ACTIONS: Record<string, Action> = {
@@ -47,7 +55,7 @@ export const ACTIONS: Record<string, Action> = {
   pace: (show, b) => show.setPace(b.pace === 'turbo' ? 'turbo' : 'story'),
   answer: (show, b) => show.answer(str(b.text) ?? 'OK', b.approve === true),
   captcha: (show) => { show.site.captcha = 'solved'; show.record('step', { kind: 'Human', text: 'The presenter solved the human check' }); },
-  'launch-agent': (show, b, launcher) => launcher.launch(str(b.runtime) ?? show.snapshot().runMode, str(b.model) ? ['--model', str(b.model)!] : []),
+  'launch-agent': (show, b, launcher) => launcher.launch(show, str(b.runtime) ?? show.snapshot().runMode, str(b.model) ? ['--model', str(b.model)!] : []),
   'stop-agent': (_show, _b, launcher) => launcher.stop(),
   reset: (show, _b, launcher) => { launcher.stop(); show.reset('idle'); },
 };
