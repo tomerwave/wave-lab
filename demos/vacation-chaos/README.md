@@ -54,9 +54,13 @@ PRESENTER_KEY=<printed key> uv run python seed_memory.py
 `vacation_chaos` harness. The role follows AWS's sample harness policy, scoped to the two models the show
 uses, the AgentCore Browser and the harness's own memory. The trust policy only lets AgentCore in this
 account and Region assume it. The harness has the Bedrock model, the system prompt from `prompt.md`, the
-AgentCore Browser tool, managed memory, and explicit iteration, token and timeout limits. `allowedTools`
-keeps the agent to the browser and the show tools, so the built-in `shell` and `file_operations` tools are
-off.
+AgentCore Browser tool, managed memory, and explicit limits: 80 iterations, 2,048 output tokens per reply,
+40,000 output tokens per run and a 30-minute timeout. The harness-level `maxTokens` is the budget for the
+whole run, not per reply; setting both to 2,048 stops the run after a few steps with
+`max_output_tokens_exceeded`. `allowedTools`
+is `["@browser", "@show"]`, so the agent sees only the browser and the show tools, and the built-in `shell`
+and `file_operations` tools are off. AgentCore Browser needs the `@` form: a plain `"browser"` only matches
+built-in tools, and silently leaves the agent without a browser.
 
 The show's MCP server is added on each invocation, not stored in the harness. Its URL and per-run
 credentials (`Authorization: Bearer <presenter key>` and `x-agent-token`) travel as headers, never in the

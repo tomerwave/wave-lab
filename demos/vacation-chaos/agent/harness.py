@@ -75,7 +75,9 @@ def ensure_role(settings: config.Settings, account: str) -> str:
 
 
 BROWSER = {"type": "agentcore_browser", "name": "browser", "config": {"agentCoreBrowser": {}}}
-ALLOWED_TOOLS = ["browser", "@show"]
+ALLOWED_TOOLS = ["@browser", "@show"]
+TOKENS_PER_REPLY = 2048
+TOKENS_PER_RUN = 40_000
 
 
 def run_tools(settings: config.Settings) -> list:
@@ -85,13 +87,13 @@ def run_tools(settings: config.Settings) -> list:
 
 def harness_config(settings: config.Settings) -> dict:
     return {
-        "model": {"bedrockModelConfig": {"modelId": settings.model_id, "maxTokens": 2048}},
+        "model": {"bedrockModelConfig": {"modelId": settings.model_id, "maxTokens": TOKENS_PER_REPLY}},
         "systemPrompt": [{"text": PROMPT}],
         "tools": [BROWSER],
         "allowedTools": ALLOWED_TOOLS,
         "maxIterations": 80,
-        "maxTokens": 2048,
-        "timeoutSeconds": 900,
+        "maxTokens": TOKENS_PER_RUN,
+        "timeoutSeconds": 1800,
     }
 
 
@@ -146,19 +148,33 @@ def harness_arn(settings: config.Settings) -> str:
     return arn
 
 
+def describe(event: dict) -> str | None:
+    start = event.get("contentBlockStart", {}).get("start", {})
+    if "toolUse" in start:
+        return f"Tool: {start['toolUse'].get('name')}"
+    for kind in ("validationException", "internalServerException", "runtimeClientError"):
+        if kind in event:
+            return f"{kind}: {event[kind].get('message')}"
+    return f"Stop: {event['messageStop'].get('stopReason')}" if "messageStop" in event else None
+
+
 def follow(settings: config.Settings, stream, model: str) -> None:
+    text = ""
     for event in stream:
         if "metadata" in event:
             report(settings, event, model)
-        if "messageStop" in event:
-            say(f"Stop: {event['messageStop'].get('stopReason')}")
+        text += event.get("contentBlockDelta", {}).get("delta", {}).get("text", "")
+        line = describe(event)
+        if line:
+            say(f"Agent: {text.strip()}\n{line}" if text.strip() else line)
+            text = ""
 
 
 def invoke(settings: config.Settings, model: str | None) -> None:
     if model and model not in (settings.model_id, settings.transplant_model_id):
         raise SystemExit(f"Model {model} is not allowed. Use {settings.model_id} or {settings.transplant_model_id}.")
     data = boto3.client("bedrock-agentcore", region_name=settings.region)
-    extra = {"model": {"bedrockModelConfig": {"modelId": model, "maxTokens": 2048}}} if model else {}
+    extra = {"model": {"bedrockModelConfig": {"modelId": model, "maxTokens": TOKENS_PER_REPLY}}} if model else {}
     session = f"vacation-chaos-{uuid.uuid4()}"
     say(f"Session {session}")
     response = data.invoke_harness(
