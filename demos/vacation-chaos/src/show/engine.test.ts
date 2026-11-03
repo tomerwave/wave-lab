@@ -191,3 +191,14 @@ test('an agent that stops without finishing is reported once, and never after a 
   h.show.agentStopped('Late exit');
   assert.equal(h.show.snapshot().stopped, null);
 });
+
+test('a twist event carries its voice and says whether the crowd chose it', () => {
+  const h = harness();
+  h.show.prefillMission('Lisbon', null);
+  h.show.openVote('chaos', ['heatwave', 'boss']);
+  h.show.closeVote();
+  h.show.applyTwist('oil-shock');
+  const twists = h.show.snapshot().events.filter((e) => e.type === 'twist').map((e) => e.data);
+  assert.deepEqual(twists.map((t) => [t.id, t.by]), [['heatwave', 'crowd'], ['oil-shock', 'world']]);
+  assert.match(String(twists[0]?.headline), /pool is soup/);
+});

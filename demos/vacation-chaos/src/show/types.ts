@@ -31,6 +31,9 @@ export interface Twist {
   label: string;
   blurb: string;
   kind: 'vote' | 'auto';
+  kicker: string;
+  headline: string;
+  effect: string;
   flightOnly?: boolean;
   inbox: string;
   apply(mission: Mission, site: SiteMode, now: number): void;

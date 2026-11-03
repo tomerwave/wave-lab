@@ -19,6 +19,6 @@ test('replay completes to done and books a flight and a hotel', async () => {
   assert.ok(snap.booked.flight);
   assert.ok(snap.booked.hotel);
   assert.equal(snap.route, '/site/done');
-  assert.equal(snap.chaosVotes, 3);
+  assert.equal(snap.chaosVotes, 2);
   assert.ok(snap.events.some((e) => e.type === 'click'));
 });

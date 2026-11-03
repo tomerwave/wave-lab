@@ -1,6 +1,7 @@
 import type { ActiveVote } from '../../src/show/engine';
 import { Backstage } from './Backstage';
-import { AgentBrowser, Header, Sidebar, Telemetry } from './Dashboard';
+import { AgentBrowser } from './AgentBrowser';
+import { Header, Sidebar, Telemetry } from './Dashboard';
 import { useMoments } from './moments';
 import { isPresenter } from './presenter';
 import { useNow, useShow, type Live } from './show';

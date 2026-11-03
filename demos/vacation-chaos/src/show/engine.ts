@@ -14,7 +14,7 @@ export const CHECKPOINTS = [
   { label: 'Turbo', kind: 'finale' },
 ] as const;
 
-const CHAOS_CHECKPOINTS = [5, 8, 10];
+const CHAOS_CHECKPOINTS = [5, 10];
 
 export type EventType = 'thought' | 'step' | 'page' | 'click' | 'booking' | 'twist' | 'vote' | 'checkpoint' | 'ask' | 'answer' | 'finish' | 'stopped' | 'telemetry' | 'reset';
 export interface ShowEvent { seq: number; at: number; type: EventType; data: Record<string, unknown> }
@@ -200,13 +200,13 @@ export class Show {
     }
   }
 
-  applyTwist(id: string): void {
+  applyTwist(id: string, by: 'crowd' | 'world' = 'world'): void {
     const twist = TWISTS[id];
     if (!twist || this.state.applied.includes(id)) return;
     twist.apply(this.state.mission, this.state.site, this.now());
     this.state.applied.push(id);
     this.inbox.push(twist.inbox);
-    this.record('twist', { id, label: twist.label, blurb: twist.blurb });
+    this.record('twist', { id, label: twist.label, blurb: twist.blurb, kicker: twist.kicker, headline: twist.headline, effect: twist.effect, by });
   }
 
   checkpoint(index: number): void {
@@ -324,7 +324,7 @@ export class Show {
       this.applyRule(winner);
       this.markReady();
     } else {
-      this.applyTwist(winner);
+      this.applyTwist(winner, 'crowd');
     }
   }
 

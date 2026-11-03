@@ -4,14 +4,16 @@ import { money } from './format';
 
 export interface Moment { kicker: string; title: string; text: string; foot: string; at: number; ms: number }
 
-export interface Moments { seen: number | null; queue: Moment[]; current: Moment | null; until: number }
+export interface Moments { seen: number | null; queue: Moment[]; current: Moment | null; until: number; restUntil: number }
 
 const MOMENT_MS = 5000;
+const TWIST_MS = 7000;
 const BOOKING_MS = 3500;
-const STALE_MS = 15000;
+const REST_MS = 3000;
+const STALE_MS = 30000;
 const BACK = 'Back to the agent';
 
-export const emptyMoments = (): Moments => ({ seen: null, queue: [], current: null, until: 0 });
+export const emptyMoments = (): Moments => ({ seen: null, queue: [], current: null, until: 0, restUntil: 0 });
 
 export function freshEvents(state: Moments, events: ShowEvent[]): ShowEvent[] {
   const seen = state.seen;
@@ -19,7 +21,7 @@ export function freshEvents(state: Moments, events: ShowEvent[]): ShowEvent[] {
   return seen === null ? [] : events.filter((e) => e.seq > seen);
 }
 
-const VOTE_KICKERS: Record<string, string> = { destination: 'The crowd chose', rule: 'His one rule', chaos: 'Plot twist, chosen by the crowd' };
+const VOTE_KICKERS: Record<string, string> = { destination: 'The crowd chose', rule: 'His one rule' };
 
 function voteText(target: string, winner: string, s: Snapshot): string {
   if (target === 'destination') return `Tomer is going to ${winner}.`;
@@ -43,22 +45,16 @@ function bookingMoment(e: ShowEvent): Moment | null {
 }
 
 function twistMoment(state: Moments, e: ShowEvent): void {
-  const { label, blurb } = e.data as { label: string; blurb: string };
-  const last = state.queue.at(-1) ?? state.current;
-  if (last?.title !== label) {
-    state.queue.push({ kicker: 'Plot twist', title: label, text: blurb, foot: BACK, at: e.at, ms: MOMENT_MS });
-    return;
-  }
-  const merged = { ...last, text: blurb };
-  if (state.queue.at(-1) === last) state.queue[state.queue.length - 1] = merged;
-  else state.current = merged;
+  const { label, kicker, headline, effect, by } = e.data as Record<string, string>;
+  const foot = by === 'crowd' ? `Chosen by the crowd: ${label}` : BACK;
+  state.queue.push({ kicker, title: headline, text: effect, foot, at: e.at, ms: TWIST_MS });
 }
 
 const BUILDERS: Partial<Record<ShowEvent['type'], (state: Moments, e: ShowEvent, s: Snapshot) => void>> = {
   reset: (state) => Object.assign(state, { queue: [], current: null }),
   twist: twistMoment,
   booking: (state, e) => { const m = bookingMoment(e); if (m) state.queue.push(m); },
-  vote: (state, e, s) => { if (e.data.phase === 'closed') state.queue.push(voteMoment(e, s)); },
+  vote: (state, e, s) => { if (e.data.phase === 'closed' && e.data.target !== 'chaos') state.queue.push(voteMoment(e, s)); },
 };
 
 export function absorb(state: Moments, s: Snapshot): void {
@@ -67,6 +63,8 @@ export function absorb(state: Moments, s: Snapshot): void {
 
 export function advance(state: Moments, localNow: number, serverNow: number): Moment | null {
   if (state.current && localNow < state.until) return state.current;
+  if (state.current) Object.assign(state, { current: null, restUntil: localNow + REST_MS });
+  if (localNow < state.restUntil) return null;
   state.queue = state.queue.filter((m) => serverNow - m.at < STALE_MS);
   state.current = state.queue.shift() ?? null;
   if (state.current) state.until = localNow + state.current.ms;

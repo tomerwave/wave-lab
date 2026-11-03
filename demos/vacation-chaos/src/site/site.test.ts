@@ -22,7 +22,7 @@ test('first flights visit fires oil shock and fares triple', async () => {
   const page = await get('/site/flights');
   assert.equal(page.status, 200);
   assert.ok(show.snapshot().applied.includes('oil-shock'));
-  assert.match(page.html, /Oil spikes/);
+  assert.match(page.html, /Oil goes vertical/);
   assert.match(page.html, /\$1,920/);
 });
 
@@ -197,4 +197,20 @@ test('when insurance stays on, the confirmation says so and the paid total inclu
   const done = (await get('/site/done')).html;
   assert.match(done, /Paid \$729/);
   assert.match(done, /Includes peace-of-mind insurance/);
+});
+
+test('two crowd twists at most: after the outage the hotel list stays calm, the first hotel page opens the vote', async () => {
+  const { show, get, advance } = setup();
+  await get('/site/flights');
+  await get('/site/flights/redeye');
+  show.closeVote();
+  await get('/site/hotels');
+  advance(11_000);
+  await get('/site/hotels');
+  assert.equal(show.snapshot().vote, null);
+  await get('/site/hotels/casa');
+  assert.equal(show.snapshot().vote?.target, 'chaos');
+  show.closeVote();
+  await get('/site/hotels/inn');
+  assert.equal(show.snapshot().vote, null);
 });

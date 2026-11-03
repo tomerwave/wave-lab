@@ -11,17 +11,27 @@ function setup() {
   return { show, state, step: (ms: number) => { now += ms; absorb(state, show.snapshot()); return now; } };
 }
 
-test('a crowd-chosen twist becomes one moment with the twist blurb', () => {
+test('a crowd-chosen twist becomes one moment in its own voice', () => {
   const { show, state, step } = setup();
   show.prefillMission('Lisbon', null);
   show.openVote('chaos', ['heatwave', 'boss']);
   show.closeVote();
   const now = step(0);
   const moment = advance(state, now, now);
-  assert.equal(moment?.kicker, 'Nobody voted, so the universe chose');
-  assert.equal(moment?.title, 'Heatwave');
-  assert.match(moment?.text ?? '', /44 degrees/);
+  assert.equal(moment?.kicker, 'Weather alert');
+  assert.match(moment?.title ?? '', /pool is soup/);
+  assert.equal(moment?.foot, 'Chosen by the crowd: Heatwave');
   assert.equal(state.queue.length, 0);
+});
+
+test('moments are spaced out with a breather so the crowd can watch the agent', () => {
+  const { show, state, step } = setup();
+  show.book('flight', 'LY 375', 640);
+  show.book('hotel', 'Casa do Mar', 900);
+  const now = step(0);
+  assert.equal(advance(state, now, now)?.title, 'LY 375');
+  assert.equal(advance(state, now + 3_600, now + 3_600), null);
+  assert.equal(advance(state, now + 6_700, now + 6_700)?.title, 'Casa do Mar');
 });
 
 test('events from before the page loaded never replay as moments', () => {
@@ -39,7 +49,7 @@ test('a moment stays up for its time, and stale moments are dropped', () => {
   const now = step(0);
   assert.equal(advance(state, now, now)?.title, 'LY 375');
   assert.equal(advance(state, now + 1_000, now + 1_000)?.title, 'LY 375');
-  assert.equal(advance(state, now + 20_000, now + 20_000), null);
+  assert.equal(advance(state, now + 40_000, now + 40_000), null);
 });
 
 test('a reset clears queued moments', () => {

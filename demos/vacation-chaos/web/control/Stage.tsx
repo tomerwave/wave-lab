@@ -85,7 +85,7 @@ function MomentScene({ moment }: { moment: Moment }) {
   return (
     <>
       <Kicker tone="text-amber-300">{moment.kicker}</Kicker>
-      <Title>{moment.title}</Title>
+      <Title small={moment.title.length > 60}>{moment.title}</Title>
       {moment.text && <p className="max-w-3xl text-[clamp(17px,2.6vh,24px)] text-zinc-300">{moment.text}</p>}
       <p className="animate-blink text-sm text-zinc-400">{moment.foot}</p>
     </>
