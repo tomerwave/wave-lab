@@ -142,3 +142,17 @@ body.skin-takeover{--brand:#0b3d2e;--brand-2:#14532d;--cta:#b91c1c;--cta-2:#991b
 .cell{background:linear-gradient(180deg,#bfdbfe 0 45%,#bbf7d0 45% 100%)}
 .cell.goat{background:linear-gradient(180deg,#bfdbfe 0 45%,#bbf7d0 45% 100%)}
 .goat-ic{width:36px;height:28px}
+.photo{object-fit:cover}
+.thumb{object-fit:cover}
+.intro{position:relative;overflow:hidden;padding:0;height:210px;align-items:flex-end}
+.intro .city{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
+.intro::after{content:"";position:absolute;inset:0;background:linear-gradient(90deg,rgba(10,37,64,.85),rgba(10,37,64,.15) 70%)}
+.intro-text{position:relative;z-index:1;color:#fff;padding:24px;display:flex;flex-direction:column;gap:4px}
+.intro-text .muted{color:rgba(255,255,255,.8)}
+.intro .btn{position:relative;z-index:1;margin:24px}
+.gallery{display:grid;grid-template-columns:2fr 1fr;gap:6px;height:230px}
+.g-main{width:100%;height:230px;object-fit:cover;border-radius:10px 0 0 10px}
+.g-side{display:grid;grid-template-rows:1fr 1fr;gap:6px;height:230px}
+.g-small{width:100%;height:112px;object-fit:cover}
+.g-side .g-small:first-child{border-radius:0 10px 0 0}
+.g-side .g-small:last-child{border-radius:0 0 10px 0}

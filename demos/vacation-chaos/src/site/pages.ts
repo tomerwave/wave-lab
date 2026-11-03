@@ -1,5 +1,5 @@
 import type { Cart } from '../show/engine.js';
-import { GOAT, ICONS, airlineMark, hotelPhoto } from './art.js';
+import { GOAT, ICONS, airlineMark, cityPhoto, gallery, hotelPhoto } from './art.js';
 import { FLIGHTS, HOTELS, city, flightPrice, hotelPrice, money, type Flight, type Hotel } from './inventory.js';
 import { esc, layout, type PageContext } from './layout.js';
 
@@ -10,7 +10,7 @@ const stars = (n: number) => `<span class="stars">${'&#9733;'.repeat(n)}</span>`
 
 export function searchPage(ctx: PageContext): string {
   const where = city(ctx.mission, ctx.site);
-  return layout(ctx, `Trips to ${where}`, `<div class="intro panel"><div><p class="lead">Flights and stays for ${ctx.mission.partySize} from Tel Aviv, 12 December.</p>
+  return layout(ctx, `Trips to ${where}`, `<div class="intro panel">${cityPhoto(where)}<div class="intro-text"><p class="lead">Flights and stays for ${ctx.mission.partySize} from Tel Aviv, 12 December.</p>
 <p class="muted">Compare fares from 3 carriers and 3 properties. Prices include taxes.</p></div><a class="btn lg" href="/site/flights" data-label="Search flights">Search flights</a></div>
 <div class="grid3">${HOTELS.map((h) => `<div class="tile">${hotelPhoto(h, 'thumb')}<b>${esc(h.name)}</b><span class="muted">${esc(h.area)}</span></div>`).join('')}</div>`);
 }
@@ -92,7 +92,7 @@ function finePrint(h: Hotel): string {
 }
 
 export function hotelDetail(ctx: PageContext, h: Hotel, cart: Cart): string {
-  return layout(ctx, h.name, `<div class="split right"><div class="panel detail">${hotelPhoto(h, 'hero')}
+  return layout(ctx, h.name, `<div class="split right"><div class="panel detail">${gallery(h)}
 <div class="head"><div>${stars(h.stars)}<span class="muted area">${ICONS.pin}${esc(h.area)}</span></div>${rating(h)}</div>${chips(h.features, ICONS.check)}${finePrint(h)}</div>
 <div class="panel summary"><span class="muted">${ctx.mission.nights} nights, ${adults(ctx.mission.partySize)}</span><strong class="price">${money(dealPrice(h, ctx, cart))}</strong><span class="muted">Free cancellation</span>
 <form method="post" action="/site/hotels/${h.id}/book"><button class="btn lg wide" data-label="Book ${esc(h.name)}">Reserve</button></form>

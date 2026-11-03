@@ -1,15 +1,17 @@
 import type { Flight, Hotel } from './inventory.js';
 
-export function hotelPhoto(h: Hotel, cls = 'photo'): string {
-  const [sky, sun, sea] = h.palette;
-  const id = `g-${h.id}-${cls}`;
-  const windows = Array.from({ length: 12 }, (_, i) => `<rect x="${118 + (i % 4) * 18}" y="${70 + Math.floor(i / 4) * 22}" width="9" height="12" rx="1.5" fill="#fff" opacity=".75"/>`).join('');
-  return `<svg class="${cls}" viewBox="0 0 320 200" preserveAspectRatio="xMidYMid slice" aria-hidden="true">
-<defs><linearGradient id="${id}" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="${sky}"/><stop offset="1" stop-color="#fff7ed"/></linearGradient></defs>
-<rect width="320" height="200" fill="url(#${id})"/><circle cx="250" cy="58" r="26" fill="${sun}" opacity=".85"/>
-<path d="M0 150 Q80 135 160 150 T320 148 V200 H0Z" fill="${sea}" opacity=".9"/><path d="M0 168 Q90 156 170 170 T320 166 V200 H0Z" fill="${sea}"/>
-<rect x="106" y="56" width="92" height="96" rx="4" fill="#f8fafc"/><rect x="106" y="56" width="92" height="8" rx="3" fill="${sun}"/>${windows}
-<rect x="40" y="96" width="44" height="56" rx="3" fill="#e2e8f0"/><rect x="214" y="104" width="38" height="48" rx="3" fill="#e2e8f0"/></svg>`;
+export function hotelPhoto(h: Hotel, cls = 'photo', n = 1): string {
+  return `<img class="${cls}" src="/static/img/${h.id}-${n}.jpg" alt="${h.name}" loading="eager">`;
+}
+
+export function gallery(h: Hotel): string {
+  return `<div class="gallery">${hotelPhoto(h, 'g-main', 1)}<div class="g-side">${hotelPhoto(h, 'g-small', 2)}${hotelPhoto(h, 'g-small', 3)}</div></div>`;
+}
+
+const CITY_PHOTO: Record<string, string> = { Lisbon: 'city-lisbon', Eilat: 'city-beach', Tehran: 'city-mountains', Tokyo: 'city-tropical' };
+
+export function cityPhoto(name: string): string {
+  return `<img class="city" src="/static/img/${CITY_PHOTO[name] ?? 'city-beach'}.jpg" alt="${name}">`;
 }
 
 export function airlineMark(f: Flight): string {

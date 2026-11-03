@@ -3,6 +3,7 @@ import type { Show } from './show/engine.js';
 import type { RunMode } from './show/types.js';
 import { handleSite } from './site/handler.js';
 import { runReplay } from './replay.js';
+import { SCENARIOS } from './scenarios.js';
 
 type Payload = Record<string, unknown>;
 type Action = (show: Show, body: Payload, launcher: AgentLauncher) => unknown;
@@ -58,4 +59,6 @@ export const ACTIONS: Record<string, Action> = {
   'launch-agent': (show, b, launcher) => launcher.launch(show, str(b.runtime) ?? show.snapshot().runMode, str(b.model) ? ['--model', str(b.model)!] : []),
   'stop-agent': (_show, _b, launcher) => launcher.stop(),
   reset: (show, _b, launcher) => { launcher.stop(); show.reset('idle'); },
+  'scenario-list': () => Object.fromEntries(Object.entries(SCENARIOS).map(([k, v]) => [k, { label: v.label, path: v.path }])),
+  scenario: (show, b, launcher) => { launcher.stop(); SCENARIOS[str(b.name) ?? '']?.setup(show); return SCENARIOS[str(b.name) ?? '']?.path ?? null; },
 };

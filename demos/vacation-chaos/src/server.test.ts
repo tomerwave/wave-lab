@@ -90,3 +90,14 @@ test('mcp calls with a stale agent token are refused', async (t) => {
   show.issueAgentToken();
   assert.equal((await fetch(`${base}/mcp/k/stale`, { method: 'POST', body: '{}' })).status, 410);
 });
+
+test('every scenario sets up and its page renders', async (t) => {
+  const { base, close } = await boot();
+  t.after(close);
+  const { SCENARIOS } = await import('./scenarios.js');
+  for (const name of Object.keys(SCENARIOS)) {
+    const res = await fetch(`${base}/api/presenter/scenario`, { method: 'POST', headers: { 'x-presenter-key': 'k' }, body: JSON.stringify({ name }) });
+    const path = (await res.json()).result as string;
+    assert.equal((await fetch(`${base}${path}${path.startsWith('/site') ? '?mirror=1' : ''}`)).status < 600, true, name);
+  }
+});

@@ -99,3 +99,15 @@ API needs the key. Phones can only vote.
 - The checkout is simulated, with no idempotency or durable ledger. A real booking flow needs both.
 - Phones poll `/api/state` every second. A quick tunnel is fine for a conference room. A large room should
   use a named tunnel or hosted server.
+
+## Credits
+
+Hotel and city photos in `public/img` are from Unsplash, used under the Unsplash License.
+
+## Screenshots
+
+`docs/screens/index.html` shows every scenario. Regenerate with the server running:
+
+```bash
+cd demos/vacation-chaos/agent && PRESENTER_KEY=demo uv run python screens.py
+```

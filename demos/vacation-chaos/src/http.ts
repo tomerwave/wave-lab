@@ -40,5 +40,5 @@ export function voterId(req: IncomingMessage): { id: string; fresh: boolean } {
 export const voterCookie = (id: string) => `vc_voter=${id}; Path=/; Max-Age=86400; SameSite=Lax`;
 
 export const CONTENT_TYPES: Record<string, string> = {
-  '.css': 'text/css', '.js': 'text/javascript', '.woff2': 'font/woff2', '.svg': 'image/svg+xml', '.png': 'image/png',
+  '.css': 'text/css', '.js': 'text/javascript', '.woff2': 'font/woff2', '.svg': 'image/svg+xml', '.png': 'image/png', '.jpg': 'image/jpeg',
 };
