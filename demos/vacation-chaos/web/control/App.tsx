@@ -1,3 +1,4 @@
+import type { ReactNode } from 'react';
 import { AskPanel } from './Ask';
 import { Backstage } from './Backstage';
 import { AgentBrowser } from './AgentBrowser';
@@ -6,6 +7,7 @@ import { useMoments } from './moments';
 import { isPresenter } from './presenter';
 import { useNow, useShow, type Live, type Wire } from './show';
 import { Stage } from './Stage';
+import { Talk } from './talk/Talk';
 import { Tour } from './Tour';
 import { HeadsUpBanner, PausedBanner, VotePanel } from './Vote';
 
@@ -41,6 +43,9 @@ function MissionControl() {
   return live ? <Show live={live} /> : null;
 }
 
+const PAGES: Record<string, () => ReactNode> = { '/tour': Tour, '/talk': Talk };
+
 export function App() {
-  return location.pathname === '/tour' ? <Tour /> : <MissionControl />;
+  const Page = PAGES[location.pathname] ?? MissionControl;
+  return <Page />;
 }

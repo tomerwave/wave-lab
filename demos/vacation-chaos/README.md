@@ -50,6 +50,9 @@ booked and decided, run time, tokens and an estimated model cost, and links into
 this harness, its traces, logs, memory and browser. `/tour` is a code tour of the nine files that matter,
 served from the live source.
 
+`/talk` is the talk itself: nine slides in the same React app, arrow keys to move, a live QR and phone count on
+the title slide, and the last arrow press opens Mission Control. `npm start` prints a Start the talk link.
+
 ### AgentCore setup (once)
 
 AgentCore Browser runs in AWS, so it needs a public URL for the show server. Phones need one too.

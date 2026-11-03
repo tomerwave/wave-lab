@@ -99,7 +99,7 @@ export function createShowServer(show: Show, config: ShowConfig, launcher = new 
   const authed = (req: IncomingMessage) => req.headers['x-presenter-key'] === config.presenterKey;
   const routes: Array<[RegExp, Handler]> = [
     [/^\/$/, (_q, res) => send(res, 302, '', { headers: { location: '/control' } })],
-    [/^\/(control|tour)$/, (_q, res) => send(res, 200, controlPage(meta))],
+    [/^\/(control|tour|talk)$/, (_q, res) => send(res, 200, controlPage(meta))],
     [/^\/api\/tour$/, async (_q, res) => sendJson(res, 200, await codeTour())],
     [/^\/vote$/, (req, res) => { const v = voterId(req); show.join(v.id); send(res, 200, votePage(), { headers: v.fresh ? { 'set-cookie': voterCookie(v.id) } : {} }); }],
     [/^\/events$/, (req, res) => streamEvents(show, req, res)],
