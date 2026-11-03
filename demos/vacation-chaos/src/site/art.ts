@@ -41,6 +41,7 @@ export const ICONS = {
   pin: '<svg viewBox="0 0 24 24" class="ic" aria-hidden="true"><path d="M12 21s7-6.3 7-12a7 7 0 1 0-14 0c0 5.7 7 12 7 12z" fill="none" stroke="currentColor" stroke-width="2"/><circle cx="12" cy="9" r="2.5" fill="currentColor"/></svg>',
   car: '<svg viewBox="0 0 24 24" class="ic" aria-hidden="true"><path d="M5 16V11l2-5h10l2 5v5M5 16h14M7 19v-3M17 19v-3M5 11h14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>',
   heart: '<svg viewBox="0 0 24 24" class="ic" aria-hidden="true"><path d="M12 20s-7-4.4-7-10a4 4 0 0 1 7-2.6A4 4 0 0 1 19 10c0 5.6-7 10-7 10z" fill="none" stroke="currentColor" stroke-width="2"/></svg>',
+  lock: '<svg viewBox="0 0 24 24" class="ic" aria-hidden="true"><rect x="5" y="11" width="14" height="9" rx="2" fill="none" stroke="currentColor" stroke-width="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3" fill="none" stroke="currentColor" stroke-width="2"/></svg>',
   alert: '<svg viewBox="0 0 24 24" class="ic" aria-hidden="true"><path d="M12 3 2 20h20L12 3zm0 6v5m0 3v.5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>',
 };
 

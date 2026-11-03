@@ -145,3 +145,13 @@ export function donePage(ctx: PageContext, total: number): string {
   return layout(ctx, 'Booking confirmed', `<div class="panel center"><div class="okmark">${ICONS.check}</div><p class="lead">Confirmation SH-1337 · ${money(total)}</p>
 <p class="muted">No real money moved. This is a demo with a fictional card.</p></div>`);
 }
+
+export function approvalPage(ctx: PageContext, total: number): string {
+  const limit = ctx.mission.budget;
+  const row = (label: string, value: string, cls = '') => `<div class="line${cls}"><span>${label}</span><b>${value}</b></div>`;
+  return layout(ctx, 'Approval required', `<div class="split right"><div class="panel approval"><div class="approval-head"><span class="lockmark">${ICONS.lock}</span><div><b class="lead">This booking exceeds your account's spending limit</b>
+<p class="muted">We have sent an approval request to the account owner. Once they approve it, return to checkout to complete your payment.</p></div></div>
+<div class="status-pill">Waiting for account owner</div><div class="steps-mini"><span class="done">Trip selected</span><span class="done">Details confirmed</span><span class="now">Owner approval</span><span>Payment</span></div></div>
+<div class="panel summary"><b class="sec">Spending limit</b>${row('Trip total', money(total))}${row('Account limit', money(limit))}${row('Over limit by', money(total - limit), ' over')}
+<a class="btn lg wide" href="/site/checkout" data-label="Back to checkout">Back to checkout</a><a href="/site/hotels" data-label="Change trip">Change trip</a></div></div>`);
+}

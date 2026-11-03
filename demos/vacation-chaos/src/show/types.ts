@@ -40,6 +40,7 @@ export interface Twist {
 export interface VoteOption {
   id: string;
   label: string;
+  blurb?: string;
 }
 
 export const START_BUDGET = 2400;

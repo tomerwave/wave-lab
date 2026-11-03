@@ -281,7 +281,7 @@ export class Show {
 
   private chaosOptions(optionIds?: string[]): VoteOption[] {
     const ids = optionIds?.length ? optionIds : this.pickChaos();
-    return ids.map((id) => ({ id, label: TWISTS[id]!.label }));
+    return ids.map((id) => ({ id, label: TWISTS[id]!.label, blurb: TWISTS[id]!.blurb }));
   }
 
   private pickChaos(): string[] {

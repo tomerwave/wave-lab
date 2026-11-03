@@ -6,7 +6,7 @@ export interface ControlMeta { checkpoints: readonly { label: string; kind: stri
 
 const json = (value: unknown) => JSON.stringify(value).replace(/</g, '\\u003c');
 
-const LOGO = '<svg viewBox="0 0 24 24" class="logo" aria-hidden="true"><rect width="24" height="24" rx="6" fill="#18181b"/><path d="M6 15c2-4 4-4 6 0s4 4 6 0" stroke="#fafafa" stroke-width="2" fill="none" stroke-linecap="round"/></svg>';
+const LOGO = '<img src="/static/img/tomerwave-icon.svg" class="logo" alt="TomerWave">';
 
 export function controlPage(meta: ControlMeta): string {
   return `${head('Mission Control', 'control.css')}<body>
@@ -44,8 +44,12 @@ export function controlPage(meta: ControlMeta): string {
 
 export function votePage(): string {
   return `${head('Vote · Vacation Chaos', 'vote.css')}<body>
-<main><div class="brand"><span class="dot"></span>Vacation Chaos · live vote</div><h1 id="q">Waiting for the next vote</h1>
-<p class="sub" id="sub">Keep this page open. When a vote opens, it shows up here.</p>
-<div id="options"></div><p class="sub" id="status"></p></main>
+<header class="top"><img src="/static/img/tomerwave-icon.svg" alt="TomerWave" class="me"><div><b>Vacation Chaos</b><span>Tomer's live agent demo</span></div><span class="live" id="live">Live</span></header>
+<main>
+  <section class="card votebox"><div class="meta"><span id="kicker">Crowd vote</span><span id="timer"></span></div><div class="timebar"><i id="timebar"></i></div>
+    <h1 id="q">Waiting for the next vote</h1><p class="sub" id="sub">Keep this page open. When a vote opens, it shows up here.</p><div id="options"></div><p class="status" id="status"></p></section>
+  <section class="card now"><span class="label">The agent right now</span><p id="thought">Waiting for the mission.</p><span class="step" id="step"></span></section>
+</main>
+<footer>Built with Strands Agents and Amazon Bedrock AgentCore</footer>
 <script src="/static/vote.js" defer></script></body></html>`;
 }

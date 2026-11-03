@@ -1,7 +1,7 @@
 import type { Show } from '../show/engine.js';
 import { findFlight, findHotel, flightPrice, hotelPrice, type Hotel } from './inventory.js';
 import { outagePage, type PageContext } from './layout.js';
-import { INSURANCE, checkoutPage, donePage, flightDetail, flightsPage, hotelDetail, hotelsPage, messagePage, searchPage } from './pages.js';
+import { INSURANCE, approvalPage, checkoutPage, donePage, flightDetail, flightsPage, hotelDetail, hotelsPage, messagePage, searchPage } from './pages.js';
 import { beforeRequest } from './rules.js';
 
 export interface SiteRequest { method: string; path: string; form: Record<string, string>; mirror: boolean; query?: Record<string, string> }
@@ -111,7 +111,7 @@ function pay(show: Show, req: SiteRequest, ctx: PageContext): SiteResponse {
   }
   const { total } = checkoutLines(show);
   if (total > show.mission.budget && !show.approvedOverspend) {
-    return { status: 402, html: messagePage(ctx, 'Needs presenter approval', `This trip costs $${total}, over the $${show.mission.budget} budget. Ask the presenter before paying.`, '/site/checkout') };
+    return { status: 402, html: approvalPage(ctx, total) };
   }
   show.record('booking', { item: 'trip', label: 'Paid', price: total });
   return redirect('/site/done');

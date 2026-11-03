@@ -9,7 +9,7 @@ from output import say
 
 OUT = Path(__file__).parent.parent / "docs" / "screens"
 SIZES = {"site": (1440, 1000), "control": (1920, 1080), "vote": (390, 844)}
-EXTRAS = [("egg-duck", "Easter egg: the duck peeks in", "site-hotels"), ("over-budget", "Over budget: needs presenter approval", "checkout-captcha")]
+EXTRAS = [("egg-duck", "Easter egg: the duck peeks in", "site-hotels"), ("over-budget", "Over budget: account owner approval", "checkout-captcha")]
 
 
 def presenter(settings: config.Settings, action: str, body: dict) -> dict:
@@ -39,7 +39,7 @@ def extras(page, settings: config.Settings) -> None:
     presenter(settings, "scenario", {"name": "site-hotels"})
     page.set_viewport_size({"width": 1440, "height": 900})
     page.goto(f"{settings.show_url}/site/hotels?mirror=1")
-    page.add_style_tag(content=".duck{animation:none!important;bottom:6px!important;transform:rotate(12deg)!important}")
+    page.add_style_tag(content=".duck{animation:none!important;transform:translate(12px,-14px) rotate(16deg)!important}")
     page.wait_for_timeout(500)
     page.screenshot(path=str(OUT / "egg-duck.png"))
     presenter(settings, "scenario", {"name": "checkout-captcha"})
@@ -60,6 +60,17 @@ def gallery(shots: list[tuple[str, str]]) -> None:
     (OUT / "index.html").write_text(html)
 
 
+def phone_voted(page, settings: config.Settings) -> tuple[str, str]:
+    presenter(settings, "scenario", {"name": "phone-vote"})
+    page.set_viewport_size({"width": 390, "height": 844})
+    page.goto(f"{settings.show_url}/vote")
+    page.wait_for_timeout(1200)
+    page.click("button[data-id]")
+    page.wait_for_timeout(1500)
+    page.screenshot(path=str(OUT / "phone-voted.png"))
+    return ("phone-voted", "Phone: after voting")
+
+
 def shoot_all(page, settings: config.Settings) -> list[tuple[str, str]]:
     shots = []
     for name, item in presenter(settings, "scenario-list", {})["result"].items():
@@ -67,6 +78,7 @@ def shoot_all(page, settings: config.Settings) -> list[tuple[str, str]]:
         shoot(page, settings, name, item["path"])
         shots.append((name, item["label"]))
         say(f"shot {name}")
+    shots.append(phone_voted(page, settings))
     extras(page, settings)
     return shots + [(n, label) for n, label, _ in EXTRAS]
 

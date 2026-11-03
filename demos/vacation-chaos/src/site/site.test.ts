@@ -67,7 +67,8 @@ test('pay over budget without approval returns approval page and books nothing',
   show.site.captcha = 'solved';
   const res = await post('/site/pay');
   assert.equal(res.status, 402);
-  assert.match(res.html, /Needs presenter approval/);
+  assert.match(res.html, /Approval required/);
+  assert.match(res.html, /Waiting for account owner/);
   assert.equal(show.snapshot().finished, null);
   assert.equal(show.snapshot().events.some((e) => e.type === 'booking' && e.data.item === 'trip'), false);
 });

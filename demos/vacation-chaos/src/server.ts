@@ -28,7 +28,7 @@ function streamEvents(show: Show, req: IncomingMessage, res: ServerResponse): vo
 
 function publicState(show: Show) {
   const s = show.snapshot();
-  return { vote: s.vote, lastResult: s.lastResult, checkpoint: s.checkpoint, runMode: s.runMode };
+  return { vote: s.vote, lastResult: s.lastResult, checkpoint: s.checkpoint, checkpointLabel: CHECKPOINTS[s.checkpoint]?.label, runMode: s.runMode, thought: s.thought, serverNow: Date.now() };
 }
 
 async function serveStatic(res: ServerResponse, path: string): Promise<void> {

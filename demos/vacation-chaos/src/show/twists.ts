@@ -98,14 +98,14 @@ export const TWISTS: Record<string, Twist> = Object.fromEntries(list.map((t) => 
 export const CHAOS_POOL = list.filter((t) => t.kind === 'vote').map((t) => t.id);
 
 export const DESTINATIONS: VoteOption[] = [
-  { id: 'Lisbon', label: 'Lisbon' },
-  { id: 'Tokyo', label: 'Tokyo' },
-  { id: 'Eilat', label: 'Eilat' },
-  { id: 'Cheapest', label: 'Wherever is cheapest' },
+  { id: 'Lisbon', label: 'Lisbon', blurb: 'Trams, tiles and pastel de nata.' },
+  { id: 'Tokyo', label: 'Tokyo', blurb: 'Ramen, neon and serious jet lag.' },
+  { id: 'Eilat', label: 'Eilat', blurb: 'Sun, sea and a four-hour drive.' },
+  { id: 'Cheapest', label: 'Wherever is cheapest', blurb: 'Let the algorithm decide. What could go wrong?' },
 ];
 
 export const RULES: VoteOption[] = [
-  { id: 'No red-eye flights', label: 'No red-eye flights' },
-  { id: 'Must have a pool', label: 'Must have a pool' },
-  { id: 'Near a McDonald\'s', label: 'Must be near a McDonald\'s' },
+  { id: 'No red-eye flights', label: 'No red-eye flights', blurb: 'Tomer needs his sleep.' },
+  { id: 'Must have a pool', label: 'Must have a pool', blurb: 'Non-negotiable. Ask his mother.' },
+  { id: 'Near a McDonald\'s', label: 'Must be near a McDonald\'s', blurb: 'For cultural reasons.' },
 ];
