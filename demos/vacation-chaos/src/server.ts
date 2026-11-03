@@ -5,6 +5,7 @@ import { fileURLToPath } from 'node:url';
 import QRCode from 'qrcode';
 import type { ShowConfig } from './config.js';
 import { CONTENT_TYPES, readForm, readJson, send, sendJson, voterCookie, voterId } from './http.js';
+import { jevDecider } from './jev.js';
 import { createMcpHandler } from './mcp.js';
 import { AgentLauncher } from './launcher.js';
 import { ACTIONS } from './presenter.js';
@@ -65,11 +66,13 @@ async function beacon(show: Show, req: IncomingMessage, res: ServerResponse): Pr
   sendJson(res, 200, {});
 }
 
-function mcpAllowed(show: Show, url: URL, key: string): number {
-  const [, , pathKey, token] = url.pathname.split('/');
-  if (pathKey !== key) return 404;
+function mcpAllowed(show: Show, req: IncomingMessage, key: string): number {
+  if (req.headers.authorization !== `Bearer ${key}`) return 401;
+  const token = req.headers['x-agent-token'];
   return token && show.agentToken && token !== show.agentToken ? 410 : 200;
 }
+
+const MCP_REFUSALS: Record<number, string> = { 401: 'Presenter key required', 410: 'This agent session has ended' };
 
 async function vote(show: Show, req: IncomingMessage, res: ServerResponse): Promise<void> {
   const body = await readJson(req);
@@ -86,8 +89,8 @@ async function presenter(ctx: { show: Show; launcher: AgentLauncher }, req: Inco
   sendJson(res, 200, { ok: true, result: result ?? null });
 }
 
-export function createShowServer(show: Show, config: ShowConfig, launcher = new AgentLauncher(config)): Server {
-  const mcp = createMcpHandler(show);
+export function createShowServer(show: Show, config: ShowConfig, launcher = new AgentLauncher(config), decider = jevDecider(config.jevKey)): Server {
+  const mcp = createMcpHandler(show, decider);
   const meta = { checkpoints: CHECKPOINTS, twists: Object.values(TWISTS).map((t) => ({ id: t.id, label: t.label })), voteUrl: `${config.publicUrl}/vote` };
   const authed = (req: IncomingMessage) => req.headers['x-presenter-key'] === config.presenterKey;
   const routes: Array<[RegExp, Handler]> = [
@@ -103,9 +106,9 @@ export function createShowServer(show: Show, config: ShowConfig, launcher = new 
     [/^\/qr\.svg$/, async (_q, res) => send(res, 200, await QRCode.toString(`${config.publicUrl}/vote`, { type: 'svg', margin: 0, color: { dark: '#2b3138', light: '#faf6ef' } }), { type: 'image/svg+xml' })],
     [/^\/static\//, (_q, res, url) => serveStatic(res, url.pathname.slice('/static/'.length))],
     [/^\/site(\/|$)/, (req, res, url) => site(show, req, res, url)],
-    [/^\/mcp\/[\w-]+(\/[\w-]+)?$/, async (req, res, url) => {
-      const status = mcpAllowed(show, url, config.presenterKey);
-      if (status !== 200) return send(res, status, status === 410 ? 'This agent session has ended' : 'Not found');
+    [/^\/mcp$/, async (req, res) => {
+      const status = mcpAllowed(show, req, config.presenterKey);
+      if (status !== 200) return send(res, status, MCP_REFUSALS[status]!);
       await mcp(req, res, req.method === 'POST' ? await readJson(req) : undefined);
     }],
   ];

@@ -1,7 +1,6 @@
 import argparse
 import json
 import time
-import urllib.request
 import uuid
 from pathlib import Path
 
@@ -9,6 +8,7 @@ import boto3
 
 import config
 from output import say
+from show_api import post_telemetry
 
 PROMPT = (Path(__file__).parent / "prompt.md").read_text()
 ACTOR = "tomer"
@@ -29,21 +29,35 @@ def trust_policy(account: str, region: str) -> str:
     })
 
 
-def role_policy(account: str, region: str) -> str:
-    return json.dumps({
-        "Version": "2012-10-17",
-        "Statement": [
-            {"Effect": "Allow", "Action": ["bedrock:InvokeModel", "bedrock:InvokeModelWithResponseStream"],
-             "Resource": [f"arn:aws:bedrock:*:{account}:inference-profile/*", "arn:aws:bedrock:*::foundation-model/*"]},
-            {"Effect": "Allow", "Action": ["bedrock-agentcore:*Browser*", "bedrock-agentcore:*Memory*", "bedrock-agentcore:*Event*",
-                                           "bedrock-agentcore:RetrieveMemoryRecords", "bedrock-agentcore:ListMemoryRecords"],
-             "Resource": [f"arn:aws:bedrock-agentcore:{region}:{account}:*", f"arn:aws:bedrock-agentcore:{region}:aws:browser/*"]},
-            {"Effect": "Allow", "Action": ["logs:CreateLogGroup", "logs:CreateLogStream", "logs:PutLogEvents", "logs:DescribeLogStreams",
-                                           "xray:PutTraceSegments", "xray:PutTelemetryRecords", "cloudwatch:PutMetricData"],
-             "Resource": "*"},
-            {"Effect": "Allow", "Action": ["ecr-public:GetAuthorizationToken", "sts:GetServiceBearerToken"], "Resource": "*"},
-        ],
-    })
+def model_resources(account: str, models: list[str]) -> list[str]:
+    profiles = [f"arn:aws:bedrock:*:{account}:inference-profile/{m}" for m in models]
+    foundations = [f"arn:aws:bedrock:*::foundation-model/{m.split('.', 1)[1]}" for m in models]
+    return profiles + foundations
+
+
+def role_policy(settings: config.Settings, account: str) -> str:
+    region, models = settings.region, [settings.model_id, settings.transplant_model_id]
+    own = f"arn:aws:bedrock-agentcore:{region}:{account}"
+    logs = f"arn:aws:logs:{region}:{account}:log-group:/aws/bedrock-agentcore/runtimes/*"
+    statements = [
+        ("BedrockModels", ["bedrock:InvokeModel", "bedrock:InvokeModelWithResponseStream"], model_resources(account, models)),
+        ("EcrPublicPull", ["ecr-public:GetAuthorizationToken", "sts:GetServiceBearerToken"], ["*"]),
+        ("Tracing", ["xray:PutTraceSegments", "xray:PutTelemetryRecords", "xray:GetSamplingRules", "xray:GetSamplingTargets"], ["*"]),
+        ("LogGroups", ["logs:CreateLogGroup", "logs:DescribeLogStreams"], [logs]),
+        ("LogStreams", ["logs:CreateLogStream", "logs:PutLogEvents"], [f"{logs}:log-stream:*"]),
+        ("WorkloadIdentity", ["bedrock-agentcore:GetWorkloadAccessToken", "bedrock-agentcore:GetWorkloadAccessTokenForJWT"],
+         [f"{own}:workload-identity-directory/default", f"{own}:workload-identity-directory/default/workload-identity/harness_*"]),
+        ("Browser", ["bedrock-agentcore:StartBrowserSession", "bedrock-agentcore:StopBrowserSession", "bedrock-agentcore:GetBrowserSession",
+                     "bedrock-agentcore:ListBrowserSessions", "bedrock-agentcore:UpdateBrowserStream",
+                     "bedrock-agentcore:ConnectBrowserAutomationStream", "bedrock-agentcore:ConnectBrowserLiveViewStream"],
+         [f"arn:aws:bedrock-agentcore:{region}:aws:browser/*"]),
+        ("Memory", ["bedrock-agentcore:CreateEvent", "bedrock-agentcore:GetEvent", "bedrock-agentcore:ListEvents",
+                    "bedrock-agentcore:RetrieveMemoryRecords"], [f"{own}:memory/{settings.harness_name}-*"]),
+    ]
+    metrics = {"Sid": "Metrics", "Effect": "Allow", "Action": "cloudwatch:PutMetricData", "Resource": "*",
+               "Condition": {"StringEquals": {"cloudwatch:namespace": "bedrock-agentcore"}}}
+    return json.dumps({"Version": "2012-10-17", "Statement": [
+        *({"Sid": sid, "Effect": "Allow", "Action": actions, "Resource": resources} for sid, actions, resources in statements), metrics]})
 
 
 def ensure_role(settings: config.Settings, account: str) -> str:
@@ -54,22 +68,27 @@ def ensure_role(settings: config.Settings, account: str) -> str:
         arn = iam.create_role(RoleName=settings.role_name, AssumeRolePolicyDocument=trust_policy(account, settings.region))["Role"]["Arn"]
         say(f"Created role {arn}. Waiting for IAM to propagate.")
         time.sleep(12)
-    iam.put_role_policy(RoleName=settings.role_name, PolicyName="vacation-chaos", PolicyDocument=role_policy(account, settings.region))
+    iam.update_assume_role_policy(RoleName=settings.role_name, PolicyDocument=trust_policy(account, settings.region))
+    iam.put_role_policy(RoleName=settings.role_name, PolicyName="vacation-chaos",
+                        PolicyDocument=role_policy(settings, account))
     return arn
 
 
-def tools(settings: config.Settings) -> list:
-    return [
-        {"type": "agentcore_browser", "name": "browser", "config": {"agentCoreBrowser": {}}},
-        {"type": "remote_mcp", "name": "show", "config": {"remoteMcp": {"url": settings.mcp_url}}},
-    ]
+BROWSER = {"type": "agentcore_browser", "name": "browser", "config": {"agentCoreBrowser": {}}}
+ALLOWED_TOOLS = ["browser", "@show"]
+
+
+def run_tools(settings: config.Settings) -> list:
+    show = {"type": "remote_mcp", "name": "show", "config": {"remoteMcp": {"url": settings.mcp_url, "headers": settings.mcp_headers}}}
+    return [BROWSER, show]
 
 
 def harness_config(settings: config.Settings) -> dict:
     return {
         "model": {"bedrockModelConfig": {"modelId": settings.model_id, "maxTokens": 2048}},
         "systemPrompt": [{"text": PROMPT}],
-        "tools": tools(settings),
+        "tools": [BROWSER],
+        "allowedTools": ALLOWED_TOOLS,
         "maxIterations": 80,
         "maxTokens": 2048,
         "timeoutSeconds": 900,
@@ -112,17 +131,6 @@ def deploy(settings: config.Settings) -> None:
     say(f"Ready: {harness['arn']}")
 
 
-def post_telemetry(settings: config.Settings, payload: dict) -> None:
-    request = urllib.request.Request(
-        f"{settings.show_url}/api/telemetry", data=json.dumps(payload).encode(), method="POST",
-        headers={"content-type": "application/json", "x-presenter-key": settings.presenter_key},
-    )
-    try:
-        urllib.request.urlopen(request, timeout=5).close()
-    except OSError as error:
-        say(f"Telemetry skipped: {error}")
-
-
 def report(settings: config.Settings, event: dict, model: str) -> None:
     usage = event["metadata"].get("usage", {})
     latency = event["metadata"].get("metrics", {}).get("latencyMs", 0)
@@ -147,12 +155,14 @@ def follow(settings: config.Settings, stream, model: str) -> None:
 
 
 def invoke(settings: config.Settings, model: str | None) -> None:
+    if model and model not in (settings.model_id, settings.transplant_model_id):
+        raise SystemExit(f"Model {model} is not allowed. Use {settings.model_id} or {settings.transplant_model_id}.")
     data = boto3.client("bedrock-agentcore", region_name=settings.region)
     extra = {"model": {"bedrockModelConfig": {"modelId": model, "maxTokens": 2048}}} if model else {}
     session = f"vacation-chaos-{uuid.uuid4()}"
     say(f"Session {session}")
     response = data.invoke_harness(
-        harnessArn=harness_arn(settings), runtimeSessionId=session, actorId=ACTOR, tools=tools(settings),
+        harnessArn=harness_arn(settings), runtimeSessionId=session, actorId=ACTOR, tools=run_tools(settings), allowedTools=ALLOWED_TOOLS,
         messages=[{"role": "user", "content": [{"text": settings.start_message}]}],
         **extra,
     )

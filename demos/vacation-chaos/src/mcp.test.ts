@@ -5,15 +5,18 @@ import { Client } from '@modelcontextprotocol/sdk/client/index.js';
 import { StreamableHTTPClientTransport } from '@modelcontextprotocol/sdk/client/streamableHttp.js';
 import { Show } from './show/engine.js';
 import { createShowServer } from './server.js';
+import { AgentLauncher } from './launcher.js';
+import type { Decider } from './jev.js';
 
-async function connect() {
+async function connect(decider?: Decider) {
   const show = new Show({ sleep: () => Promise.resolve() });
   show.prefillMission('Tokyo', null);
-  const server = createShowServer(show, { port: 0, publicUrl: 'http://localhost', presenterKey: 'k' });
+  const config = { port: 0, publicUrl: 'http://localhost', presenterKey: 'k' };
+  const server = createShowServer(show, config, new AgentLauncher(config), decider);
   await new Promise<void>((r) => server.listen(0, r));
-  const url = new URL(`http://localhost:${(server.address() as AddressInfo).port}/mcp/k`);
+  const url = new URL(`http://localhost:${(server.address() as AddressInfo).port}/mcp`);
   const client = new Client({ name: 'test', version: '1.0.0' });
-  await client.connect(new StreamableHTTPClientTransport(url));
+  await client.connect(new StreamableHTTPClientTransport(url, { requestInit: { headers: { authorization: 'Bearer k' } } }));
   const close = async () => { await client.close(); await new Promise((r) => server.close(r)); };
   return { show, client, close };
 }
@@ -42,4 +45,32 @@ test('oversized thought is rejected', async (t) => {
   t.after(close);
   const result = await client.callTool({ name: 'think_aloud', arguments: { thought: 'x'.repeat(401) } });
   assert.equal(result.isError, true);
+});
+
+const options = { direct: 'Direct flight, $640', redeye: 'Red-eye, $480' };
+
+test('jev_decide is offered only when Jev is configured, and records the pick', async (t) => {
+  const seen: unknown[] = [];
+  const { show, client, close } = await connect(async (request) => { seen.push(request); return { choice: 'direct', confidence: 0.93, probabilities: { direct: 0.93, redeye: 0.07 } }; });
+  t.after(close);
+  assert.ok((await client.listTools()).tools.some((x) => x.name === 'jev_decide'));
+  const reply = text(await client.callTool({ name: 'jev_decide', arguments: { question: 'Which flight?', options, context: 'No red-eyes.' } }));
+  assert.equal(reply.choice, 'direct');
+  assert.deepEqual(seen, [{ question: 'Which flight?', options, context: 'No red-eyes.' }]);
+  assert.deepEqual(show.snapshot().events.at(-1)?.data, { kind: 'Jev', text: 'Direct flight, $640 (93%)' });
+});
+
+test('jev_decide tells the agent to decide alone when Jev fails', async (t) => {
+  const { client, close } = await connect(async () => { throw new Error('timeout'); });
+  t.after(close);
+  const reply = text(await client.callTool({ name: 'jev_decide', arguments: { question: 'Which flight?', options, context: 'x' } }));
+  assert.equal(reply.error, 'timeout');
+  assert.match(reply.note, /Decide yourself/);
+});
+
+test('jev_decide rejects a single option', async (t) => {
+  const { client, close } = await connect(async () => ({ choice: 'direct', confidence: 1, probabilities: {} }));
+  t.after(close);
+  const result = await client.callTool({ name: 'jev_decide', arguments: { question: 'Which?', options: { direct: 'x' }, context: 'x' } });
+  assert.equal((result as { isError?: boolean }).isError, true);
 });

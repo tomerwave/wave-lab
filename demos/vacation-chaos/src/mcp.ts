@@ -2,6 +2,7 @@ import type { IncomingMessage, ServerResponse } from 'node:http';
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { StreamableHTTPServerTransport } from '@modelcontextprotocol/sdk/server/streamableHttp.js';
 import { z } from 'zod';
+import type { Decider, DecisionRequest } from './jev.js';
 import type { Show, ToolReply } from './show/engine.js';
 
 const asText = (value: ToolReply | Record<string, unknown>) => ({ content: [{ type: 'text' as const, text: JSON.stringify(value) }] });
@@ -15,7 +16,30 @@ async function askWithHeartbeat(show: Show, question: string): Promise<Record<st
   return answer === null ? { answer: null, note: 'The presenter has not answered yet. Call ask_presenter again with the same question.' } : { answer };
 }
 
-export function buildMcpServer(show: Show): McpServer {
+async function decide(show: Show, decider: Decider, request: DecisionRequest): Promise<Record<string, unknown>> {
+  try {
+    const decision = await decider(request);
+    const percent = Math.round(decision.confidence * 100);
+    show.record('step', { kind: 'Jev', text: `${request.options[decision.choice] ?? decision.choice} (${percent}%)` });
+    return { ...decision };
+  } catch (error) {
+    show.record('step', { kind: 'Jev', text: 'Unavailable, the agent decides alone' });
+    return { error: error instanceof Error ? error.message : 'Jev failed', note: 'Jev is unavailable. Decide yourself.' };
+  }
+}
+
+function registerDecide(server: McpServer, show: Show, decider: Decider): void {
+  server.registerTool('jev_decide', {
+    description: 'Ask Jev, a fast decision model, to pick one option. Use it for every real choice: which flight, which hotel, whether fine print is a trap, whether to pay. Give option ids with a short description each, and the facts Jev needs in context.',
+    inputSchema: {
+      question: z.string().min(1).max(300),
+      options: z.record(z.string().regex(/^[a-z0-9-]{1,40}$/), z.string().min(1).max(200)).refine((o) => Object.keys(o).length >= 2 && Object.keys(o).length <= 8, 'Give 2 to 8 options.'),
+      context: z.string().min(1).max(4000),
+    },
+  }, async (request) => asText(await decide(show, decider, request)));
+}
+
+export function buildMcpServer(show: Show, decider?: Decider): McpServer {
   const server = new McpServer({ name: 'vacation-chaos-show', version: '1.0.0' });
   server.registerTool('think_aloud', {
     description: 'Say what you are about to do and why, in one or two short sentences the audience will read. Call this before every browser action. Returns the current mission and any new messages.',
@@ -40,12 +64,13 @@ export function buildMcpServer(show: Show): McpServer {
     description: 'End the mission with a short, honest summary for Tomer, including anything you refused to do and why.',
     inputSchema: { summary: z.string().min(1).max(800) },
   }, async ({ summary }) => { show.finish(summary); return asText({ ok: true }); });
+  if (decider) registerDecide(server, show, decider);
   return server;
 }
 
-export function createMcpHandler(show: Show) {
+export function createMcpHandler(show: Show, decider?: Decider) {
   return async (req: IncomingMessage, res: ServerResponse, body: unknown): Promise<void> => {
-    const server = buildMcpServer(show);
+    const server = buildMcpServer(show, decider);
     const transport = new StreamableHTTPServerTransport({ sessionIdGenerator: undefined });
     res.on('close', () => { void transport.close(); void server.close(); });
     await server.connect(transport);

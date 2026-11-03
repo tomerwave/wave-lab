@@ -35,7 +35,7 @@ test('presenter endpoints reject a missing key with 401', async (t) => {
 test('mcp endpoint requires the key in the path', async (t) => {
   const { base, close } = await boot();
   t.after(close);
-  assert.equal((await fetch(`${base}/mcp/wrong`, { method: 'POST', body: '{}' })).status, 404);
+  assert.equal((await fetch(`${base}/mcp`, { method: 'POST', body: '{}', headers: { authorization: 'Bearer wrong' } })).status, 401);
 });
 
 test('events endpoint streams a snapshot on change', async (t) => {
@@ -88,7 +88,7 @@ test('mcp calls with a stale agent token are refused', async (t) => {
   const { show, base, close } = await boot();
   t.after(close);
   show.issueAgentToken();
-  assert.equal((await fetch(`${base}/mcp/k/stale`, { method: 'POST', body: '{}' })).status, 410);
+  assert.equal((await fetch(`${base}/mcp`, { method: 'POST', body: '{}', headers: { authorization: 'Bearer k', 'x-agent-token': 'stale' } })).status, 410);
 });
 
 test('every scenario sets up and its page renders', async (t) => {

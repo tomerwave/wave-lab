@@ -2191,7 +2191,7 @@ requires-dist = [
     { name = "boto3", extras = ["crt"], specifier = ">=1.40" },
     { name = "mcp", specifier = ">=1.12" },
     { name = "strands-agents", extras = ["otel"], specifier = ">=1.10" },
-    { name = "strands-agents-tools", extras = ["local-chromium-browser", "agent-core-browser"], specifier = ">=0.2.8" },
+    { name = "strands-agents-tools", extras = ["local-chromium-browser", "agent-core-browser"], specifier = ">=0.8,<0.9" },
 ]
 
 [[package]]

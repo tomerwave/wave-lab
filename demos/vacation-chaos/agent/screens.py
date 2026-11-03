@@ -1,11 +1,10 @@
-import json
-import urllib.request
 from pathlib import Path
 
 from playwright.sync_api import sync_playwright
 
 import config
 from output import say
+from show_api import call
 
 OUT = Path(__file__).parent.parent / "docs" / "screens"
 SIZES = {"site": (1440, 1000), "control": (1920, 1080), "vote": (390, 844)}
@@ -13,12 +12,7 @@ EXTRAS = [("egg-duck", "Easter egg: the duck peeks in", "site-hotels"), ("over-b
 
 
 def presenter(settings: config.Settings, action: str, body: dict) -> dict:
-    request = urllib.request.Request(
-        f"{settings.show_url}/api/presenter/{action}", data=json.dumps(body).encode(), method="POST",
-        headers={"content-type": "application/json", "x-presenter-key": settings.presenter_key},
-    )
-    with urllib.request.urlopen(request, timeout=10) as response:
-        return json.loads(response.read())
+    return call(settings, f"/api/presenter/{action}", body)
 
 
 def kind(path: str) -> str:

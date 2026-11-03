@@ -46,19 +46,33 @@ AgentCore Browser runs in AWS, so it needs a public URL for the show server. Pho
 npm run tunnel -w @tomerwave/vacation-chaos          # prints https://<random>.trycloudflare.com
 PUBLIC_URL=https://<random>.trycloudflare.com npm start -w @tomerwave/vacation-chaos
 cd demos/vacation-chaos/agent
-SHOW_URL=https://<random>.trycloudflare.com uv run python harness.py deploy
-SHOW_URL=https://<random>.trycloudflare.com uv run python seed_memory.py
+PRESENTER_KEY=<printed key> uv run python harness.py deploy
+PRESENTER_KEY=<printed key> uv run python seed_memory.py
 ```
 
 `harness.py deploy` creates a least-privilege execution role, then creates or updates the
-`vacation_chaos` harness. The harness has the Bedrock model, the system prompt from `prompt.md`, the
-AgentCore Browser tool, the show's MCP tools as a remote MCP server, managed memory, and explicit
-iteration, token and timeout limits. Each invocation passes the current show URL as a tools override,
-so a new tunnel URL does not need a redeploy.
+`vacation_chaos` harness. The role follows AWS's sample harness policy, scoped to the two models the show
+uses, the AgentCore Browser and the harness's own memory. The trust policy only lets AgentCore in this
+account and Region assume it. The harness has the Bedrock model, the system prompt from `prompt.md`, the
+AgentCore Browser tool, managed memory, and explicit iteration, token and timeout limits. `allowedTools`
+keeps the agent to the browser and the show tools, so the built-in `shell` and `file_operations` tools are
+off.
+
+The show's MCP server is added on each invocation, not stored in the harness. Its URL and per-run
+credentials (`Authorization: Bearer <presenter key>` and `x-agent-token`) travel as headers, never in the
+URL, so a new tunnel or a new run does not need a redeploy and no secret is saved in the harness. The
+brain transplant can only switch to the two models named in the execution role.
+
+Jev from TypeSafe AI makes the agent's real choices through a `jev_decide` show tool: which flight, which hotel, whether fine print is a trap, whether to pay. Put `TYPESAFE_API_KEY` in `demos/vacation-chaos/.env` (git-ignored); `npm start` loads it. The key stays in the show server and is never passed to the agent or the model. Without it the tool is not offered and the agent decides alone.
 
 Environment variables for the agent: `SHOW_URL`, `PRESENTER_KEY`, `MODEL_ID` (default
-`us.anthropic.claude-sonnet-4-6`), `AWS_REGION` (default `us-east-1`), and `BROWSER=agentcore`, which lets
-the local agent use AgentCore Browser without deploying anything.
+`eu.anthropic.claude-haiku-4-5-20251001-v1:0`), `TRANSPLANT_MODEL_ID` (default
+`eu.anthropic.claude-sonnet-4-6`), `AWS_REGION` (default `eu-central-1`), and `BROWSER=agentcore`, which
+lets the local agent use AgentCore Browser without deploying anything. Haiku 4.5 is the cheapest Claude
+model on Bedrock that drives the browser reliably; newer models need account access first.
+
+The local agent uses the `browser` tool from `strands-agents-tools`, which is deprecated and removed in 0.9,
+so the dependency is pinned below 0.9. The AgentCore Harness path does not use it.
 
 ## Run of show
 
@@ -80,8 +94,8 @@ the local agent use AgentCore Browser without deploying anything.
 - The server is the source of truth. Twists are applied when the server renders pages, so the agent can't
   skip them. Payment over budget is rejected by the server unless the presenter approved it. The model's
   word is never enough.
-- The agent's only non-browser tools are the five show tools (`think_aloud`, `check_inbox`,
-  `ask_presenter`, `report_booking`, `finish`). Storytelling pace slows the show by holding the
+- The agent's only non-browser tools are the show tools (`think_aloud`, `check_inbox`,
+  `ask_presenter`, `report_booking`, `finish`, and `jev_decide` when Jev is configured). Storytelling pace slows the show by holding the
   `think_aloud` reply on the server, not by slowing the model.
 - Replay mode is a script, labeled "Replay" in the run line. Live mode is labeled "Live".
 
@@ -89,8 +103,8 @@ the local agent use AgentCore Browser without deploying anything.
 
 Once an agent is launched, the server issues a per-launch agent token. The agent's first page
 (`/site?agent=<token>`) sets a cookie. Every other browser, including an audience member who opens
-`/site`, gets a read-only view, so nobody else can book or fire twists. The MCP URL carries the presenter
-key and the same token, so a killed agent's leftover cloud session is refused (HTTP 410). The presenter
+`/site`, gets a read-only view, so nobody else can book or fire twists. MCP requests carry the presenter
+key and the same token as headers, so a killed agent's leftover cloud session is refused (HTTP 410). The presenter
 API needs the key. Phones can only vote.
 
 ## Limitations
