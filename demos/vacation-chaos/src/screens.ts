@@ -2,7 +2,7 @@ const head = (title: string, css: string) => `<!doctype html><html lang="en"><he
 <meta name="viewport" content="width=device-width,initial-scale=1"><title>${title}</title>
 <link rel="stylesheet" href="/static/theme.css"><link rel="stylesheet" href="/static/${css}"></head>`;
 
-export interface ControlMeta { checkpoints: readonly { label: string; kind: string }[]; twists: { id: string; label: string }[]; voteUrl: string }
+export interface ControlMeta { checkpoints: readonly { label: string; kind: string }[]; twists: { id: string; label: string }[]; voteUrl: string; defaultRuntime: string }
 
 const json = (value: unknown) => JSON.stringify(value).replace(/</g, '\\u003c');
 

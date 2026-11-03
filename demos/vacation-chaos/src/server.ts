@@ -3,7 +3,7 @@ import { readFile } from 'node:fs/promises';
 import { extname, join, normalize } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import QRCode from 'qrcode';
-import type { ShowConfig } from './config.js';
+import { isLocal, type ShowConfig } from './config.js';
 import { CONTENT_TYPES, readForm, readJson, send, sendJson, voterCookie, voterId } from './http.js';
 import { jevDecider } from './jev.js';
 import { createMcpHandler } from './mcp.js';
@@ -91,7 +91,7 @@ async function presenter(ctx: { show: Show; launcher: AgentLauncher }, req: Inco
 
 export function createShowServer(show: Show, config: ShowConfig, launcher = new AgentLauncher(config), decider = jevDecider(config.jevKey)): Server {
   const mcp = createMcpHandler(show, decider);
-  const meta = { checkpoints: CHECKPOINTS, twists: Object.values(TWISTS).map((t) => ({ id: t.id, label: t.label })), voteUrl: `${config.publicUrl}/vote` };
+  const meta = { checkpoints: CHECKPOINTS, twists: Object.values(TWISTS).map((t) => ({ id: t.id, label: t.label })), voteUrl: `${config.publicUrl}/vote`, defaultRuntime: isLocal(config.publicUrl) ? 'local' : 'agentcore' };
   const authed = (req: IncomingMessage) => req.headers['x-presenter-key'] === config.presenterKey;
   const routes: Array<[RegExp, Handler]> = [
     [/^\/$/, (_q, res) => send(res, 302, '', { headers: { location: '/control' } })],

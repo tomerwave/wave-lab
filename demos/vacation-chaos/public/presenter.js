@@ -1,6 +1,13 @@
 const panel = document.getElementById('overlay');
 const presenterMeta = JSON.parse(document.getElementById('meta').textContent);
 
+function keyFromLink() {
+  const key = new URLSearchParams(location.hash.slice(1)).get('key');
+  if (!key) return;
+  sessionStorage.setItem('vc_key', key);
+  history.replaceState(null, '', location.pathname);
+}
+
 function presenterKey() {
   let key = sessionStorage.getItem('vc_key');
   if (!key) {
@@ -31,17 +38,42 @@ function buildPanel() {
 <h3>Fire a twist now</h3>${twistButtons()}`;
 }
 
-panel.addEventListener('click', (e) => {
+function buildStartBar() {
+  const bar = document.createElement('div');
+  bar.className = 'startbar';
+  const runtime = presenterMeta.defaultRuntime;
+  bar.innerHTML = button(`Start on ${runtime === 'agentcore' ? 'AgentCore' : 'this laptop'}`, 'start-live', { runtime }, 'primary')
+    + button('Approve spend', 'answer', { approve: true, text: 'Approved, go ahead.' })
+    + button('Human check done', 'captcha') + button('Turbo', 'turbo') + button('Stop', 'reset') + button('More', 'more');
+  document.querySelector('header.top').append(bar);
+  bar.addEventListener('click', onClick);
+}
+
+function togglePanel() {
+  if (!panel.innerHTML) buildPanel();
+  panel.classList.toggle('hidden');
+}
+
+function bodyFor(el) {
+  const body = JSON.parse(el.dataset.body);
+  if (el.dataset.act === 'answer' && !body.text) body.text = document.getElementById('answerText').value;
+  if (body.withModel) body.model = document.getElementById('modelId').value;
+  return body;
+}
+
+async function onClick(e) {
   const el = e.target.closest('button[data-act]');
   if (!el) return;
-  const body = JSON.parse(el.dataset.body);
-  if (el.dataset.act === 'answer') body.text = document.getElementById('answerText').value;
-  if (body.withModel) body.model = document.getElementById('modelId').value;
-  void act(el.dataset.act, body);
-});
+  if (el.dataset.act === 'more') return togglePanel();
+  await act(el.dataset.act, bodyFor(el));
+  if (el.dataset.act === 'captcha') await act('answer', { text: 'Done, I solved the human check.', approve: false });
+}
+
+panel.addEventListener('click', onClick);
+keyFromLink();
+if (sessionStorage.getItem('vc_key')) buildStartBar();
 
 document.addEventListener('keydown', (e) => {
   if (e.key.toLowerCase() !== 'p' || e.target.tagName === 'INPUT') return;
-  if (!panel.innerHTML) buildPanel();
-  panel.classList.toggle('hidden');
+  togglePanel();
 });

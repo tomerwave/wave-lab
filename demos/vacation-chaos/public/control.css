@@ -87,3 +87,7 @@ body{font-size:14px;padding:20px 24px 16px;display:flex;flex-direction:column;ga
 .overlay button:hover{background:var(--accent)}
 .overlay button.primary{background:var(--primary);color:var(--primary-fg);border-color:var(--primary)}
 .overlay input{font:inherit;width:100%;padding:7px 10px;border:1px solid var(--border);border-radius:8px;margin-bottom:8px}
+.startbar{display:flex;gap:6px}
+.startbar button{font:inherit;font-size:12px;font-weight:500;padding:6px 10px;border:1px solid var(--border);border-radius:8px;background:var(--card);cursor:pointer}
+.startbar button:hover{background:var(--accent)}
+.startbar button.primary{background:var(--primary);color:var(--primary-fg);border-color:var(--primary)}

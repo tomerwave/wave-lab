@@ -16,9 +16,10 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): ShowConfig {
   return { port, publicUrl, presenterKey, jevKey: env.TYPESAFE_API_KEY || undefined };
 }
 
+export const isLocal = (publicUrl: string) => /^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/.test(publicUrl);
+
 export function checkKey(key: string, publicUrl: string): void {
-  const local = /^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/.test(publicUrl);
-  if (!local && key.length < 16) throw new Error('PRESENTER_KEY must be at least 16 characters when PUBLIC_URL is public.');
+  if (!isLocal(publicUrl) && key.length < 16) throw new Error('PRESENTER_KEY must be at least 16 characters when PUBLIC_URL is public.');
 }
 
 const SERVER_ONLY = ['TYPESAFE_API_KEY'];
