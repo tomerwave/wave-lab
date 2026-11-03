@@ -63,11 +63,19 @@ function Budget({ snap }: { snap: Snapshot }) {
 
 const booked = (b: Booking | null) => (b ? `${b.label} · ${money(b.price)}` : <span className="font-normal text-zinc-400">Not yet</span>);
 
+const NEXT_VOTE = ['When the agent picks a flight', 'When the agent opens a hotel'];
+
+function UpNext({ snap }: { snap: Snapshot }) {
+  const next = snap.mission.ready ? NEXT_VOTE[snap.chaosVotes] ?? 'No more votes. Just vibes.' : 'Right after Start';
+  return <Card label="Next crowd vote"><p className="text-[15px] font-semibold">{next}</p></Card>;
+}
+
 export function Sidebar({ snap }: { snap: Snapshot }) {
   return (
     <aside className="flex min-h-0 flex-col gap-3">
       <Budget snap={snap} />
       <Card label="Booked"><Line name="Flight">{booked(snap.booked.flight)}</Line><Line name="Hotel">{booked(snap.booked.hotel)}</Line></Card>
+      <UpNext snap={snap} />
       <Card label="Last crowd vote"><p className="text-[15px] font-semibold">{snap.lastResult?.winner ?? <span className="font-normal text-zinc-400">None yet</span>}</p></Card>
     </aside>
   );

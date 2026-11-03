@@ -26,14 +26,19 @@ export interface SiteMode {
   avoidFlight: string | null;
 }
 
+export type TwistLook = 'news' | 'message' | 'alert' | 'status' | 'post';
+
 export interface Twist {
   id: string;
   label: string;
   blurb: string;
   kind: 'vote' | 'auto';
+  look: TwistLook;
   kicker: string;
   headline: string;
   effect: string;
+  sticker: string;
+  lines: string[];
   flightOnly?: boolean;
   inbox: string;
   apply(mission: Mission, site: SiteMode, now: number): void;

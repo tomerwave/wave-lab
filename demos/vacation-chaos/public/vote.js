@@ -19,7 +19,17 @@ function optionButton(vote, option) {
   return `<button class="${mine ? 'on' : ''}" data-id="${esc(option.id)}">${fill}<span class="txt"><b>${esc(option.label)}</b>${blurb}</span>${share}${mine ? '<span class="tick">Your vote</span>' : ''}</button>`;
 }
 
+function showHeadsUp(vote) {
+  const left = Math.max(1, Math.ceil((vote.opensAt - (Date.now() + state.offset)) / 1000));
+  el('kicker').textContent = 'Get ready';
+  el('q').textContent = vote.question;
+  el('sub').textContent = `Voting opens in ${left} second${left === 1 ? '' : 's'}. Look at the big screen.`;
+  el('options').innerHTML = '';
+  el('status').textContent = '';
+}
+
 function showVote(vote) {
+  if (vote.opensAt > Date.now() + state.offset) return showHeadsUp(vote);
   if (state.voteId !== vote.id) Object.assign(state, { voteId: vote.id, choice: null });
   state.vote = vote;
   el('kicker').textContent = 'Crowd vote · live';
@@ -46,7 +56,7 @@ function tick() {
   if (!v) return;
   const left = Math.max(0, v.closesAt - (Date.now() + state.offset));
   el('timer').textContent = `0:${String(Math.ceil(left / 1000)).padStart(2, '0')}`;
-  el('timebar').style.width = `${Math.min(100, (left / 30000) * 100)}%`;
+  el('timebar').style.width = `${Math.min(100, (left / (v.closesAt - v.opensAt)) * 100)}%`;
 }
 
 async function refresh() {

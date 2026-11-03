@@ -18,7 +18,8 @@ test('a crowd-chosen twist becomes one moment in its own voice', () => {
   show.closeVote();
   const now = step(0);
   const moment = advance(state, now, now);
-  assert.equal(moment?.kicker, 'Weather alert');
+  assert.equal(moment?.look, 'alert');
+  assert.equal(moment?.kicker, 'Weather alert · Extreme heat');
   assert.match(moment?.title ?? '', /pool is soup/);
   assert.equal(moment?.foot, 'Chosen by the crowd: Heatwave');
   assert.equal(state.queue.length, 0);
@@ -32,6 +33,17 @@ test('moments are spaced out with a breather so the crowd can watch the agent', 
   assert.equal(advance(state, now, now)?.title, 'LY 375');
   assert.equal(advance(state, now + 3_600, now + 3_600), null);
   assert.equal(advance(state, now + 6_700, now + 6_700)?.title, 'Casa do Mar');
+});
+
+test('the destination result is a postcard with the city in its own voice', () => {
+  const { show, state, step } = setup();
+  show.beginOpening();
+  show.closeVote();
+  const now = step(0);
+  const moment = advance(state, now, now);
+  assert.equal(moment?.look, 'postcard');
+  assert.equal(moment?.title, 'Lisbon');
+  assert.match(moment?.text ?? '', /Seven hills/);
 });
 
 test('events from before the page loaded never replay as moments', () => {

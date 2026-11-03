@@ -1,6 +1,8 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { Show } from './engine.js';
+import { HEADS_UP_MS, Show, VOTE_MS } from './engine.js';
+
+const WHOLE_VOTE = HEADS_UP_MS + VOTE_MS;
 
 function harness() {
   let now = 0;
@@ -13,8 +15,8 @@ function harness() {
 
 function finishOpening(h: ReturnType<typeof harness>) {
   h.show.beginOpening();
-  h.advance(30_000);
-  h.advance(30_000);
+  h.advance(WHOLE_VOTE);
+  h.advance(WHOLE_VOTE);
 }
 
 test('castVote twice from one voter counts once', () => {
@@ -39,10 +41,10 @@ test('votes close by themselves after 30 seconds and the rule vote follows', () 
   const h = harness();
   h.show.beginOpening();
   h.show.castVote('a', 'Tokyo');
-  h.advance(30_000);
+  h.advance(WHOLE_VOTE);
   assert.equal(h.show.snapshot().mission.destination, 'Tokyo');
   assert.equal(h.show.snapshot().vote?.target, 'rule');
-  h.advance(30_000);
+  h.advance(WHOLE_VOTE);
   assert.equal(h.show.snapshot().mission.ready, true);
   assert.deepEqual(h.show.snapshot().mission.nevers, ['No red-eye flights']);
 });
@@ -54,7 +56,7 @@ test('think blocks until opening votes finish', async () => {
   const reply = h.show.think('Reading the mission.').then((r) => { done = true; return r; });
   await h.flush();
   assert.equal(done, false);
-  h.advance(30_000); h.advance(30_000);
+  h.advance(WHOLE_VOTE); h.advance(WHOLE_VOTE);
   const r = await reply;
   assert.equal(r.mission.destination, 'Lisbon');
 });
@@ -68,7 +70,7 @@ test('think blocks while a chaos vote is open then returns its inbox', async () 
   await h.flush();
   assert.equal(done, false);
   h.show.castVote('a', vote.options[1]!.id);
-  h.advance(30_000);
+  h.advance(WHOLE_VOTE);
   const r = await reply;
   assert.equal(r.inbox.length, 1);
   assert.equal(h.show.snapshot().applied.includes(vote.options[1]!.id), true);
@@ -192,7 +194,7 @@ test('an agent that stops without finishing is reported once, and never after a 
   assert.equal(h.show.snapshot().stopped, null);
 });
 
-test('a twist event carries its voice and says whether the crowd chose it', () => {
+test('a twist event says whether the crowd chose it', () => {
   const h = harness();
   h.show.prefillMission('Lisbon', null);
   h.show.openVote('chaos', ['heatwave', 'boss']);
@@ -200,5 +202,4 @@ test('a twist event carries its voice and says whether the crowd chose it', () =
   h.show.applyTwist('oil-shock');
   const twists = h.show.snapshot().events.filter((e) => e.type === 'twist').map((e) => e.data);
   assert.deepEqual(twists.map((t) => [t.id, t.by]), [['heatwave', 'crowd'], ['oil-shock', 'world']]);
-  assert.match(String(twists[0]?.headline), /pool is soup/);
 });

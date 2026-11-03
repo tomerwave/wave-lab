@@ -1,4 +1,4 @@
-import type { ActiveVote } from '../../src/show/engine';
+import { AskPanel } from './Ask';
 import { Backstage } from './Backstage';
 import { AgentBrowser } from './AgentBrowser';
 import { Header, Sidebar, Telemetry } from './Dashboard';
@@ -6,8 +6,6 @@ import { useMoments } from './moments';
 import { isPresenter } from './presenter';
 import { useNow, useShow, type Live } from './show';
 import { Stage } from './Stage';
-
-const secondsLeft = (vote: ActiveVote | null, serverNow: number) => (vote ? Math.max(0, Math.ceil((vote.closesAt - serverNow) / 1000)) : 0);
 
 function Show({ live: { snap, offset } }: { live: Live }) {
   const now = useNow(250);
@@ -20,7 +18,8 @@ function Show({ live: { snap, offset } }: { live: Live }) {
         <Sidebar snap={snap} />
       </main>
       <Telemetry snap={snap} />
-      <Stage snap={snap} moment={moment} secondsLeft={secondsLeft(snap.vote, now + offset)} />
+      <Stage snap={snap} moment={moment} serverNow={now + offset} />
+      {snap.pendingAsk && <AskPanel ask={snap.pendingAsk} />}
       {isPresenter && <Backstage />}
     </div>
   );

@@ -3,6 +3,7 @@ import { CHAOS_POOL, DESTINATIONS, RULES, TWISTS } from './twists.js';
 import { START_BUDGET, freshMission, freshSite, type Ask, type AskKind, type Mission, type Pace, type RunMode, type SiteMode, type VoteOption } from './types.js';
 
 export const VOTE_MS = 30_000;
+export const HEADS_UP_MS = 6_000;
 export const THINK_DELAY: Record<Pace, number> = { story: 2500, turbo: 0 };
 export const SITE_DELAY: Record<Pace, number> = { story: 600, turbo: 0 };
 
@@ -19,7 +20,7 @@ const CHAOS_CHECKPOINTS = [5, 10];
 export type EventType = 'thought' | 'step' | 'page' | 'click' | 'booking' | 'twist' | 'vote' | 'checkpoint' | 'ask' | 'answer' | 'finish' | 'stopped' | 'telemetry' | 'reset';
 export interface ShowEvent { seq: number; at: number; type: EventType; data: Record<string, unknown> }
 export type VoteTarget = 'destination' | 'rule' | 'chaos';
-export interface ActiveVote { id: string; target: VoteTarget; question: string; options: VoteOption[]; tally: Record<string, number>; total: number; closesAt: number }
+export interface ActiveVote { id: string; target: VoteTarget; question: string; options: VoteOption[]; tally: Record<string, number>; total: number; opensAt: number; closesAt: number }
 export interface Booking { label: string; price: number }
 export interface Telemetry { toolCalls: number; inputTokens: number; outputTokens: number; latencyMs: number; model: string | null }
 export interface Haggle { hotelId: string; offer: number; accepted: boolean; reply: string }
@@ -155,7 +156,7 @@ export class Show {
     if (!options.length) return null;
     const vote: ActiveVote = {
       id: `${target}-${this.now()}`, target, question: QUESTIONS[target], options,
-      tally: Object.fromEntries(options.map((o) => [o.id, 0])), total: 0, closesAt: this.now() + VOTE_MS,
+      tally: Object.fromEntries(options.map((o) => [o.id, 0])), total: 0, opensAt: this.now() + HEADS_UP_MS, closesAt: this.now() + HEADS_UP_MS + VOTE_MS,
     };
     this.voters.clear();
     this.state.vote = vote;
@@ -186,7 +187,7 @@ export class Show {
     const winner = vote.options.reduce((best, o) => (vote.tally[o.id]! > vote.tally[best.id]! ? o : best), vote.options[0]!);
     this.state.vote = null;
     this.state.lastResult = { question: vote.question, winner: winner.label, total: vote.total };
-    this.record('vote', { phase: 'closed', target: vote.target, winner: winner.label, total: vote.total });
+    this.record('vote', { phase: 'closed', target: vote.target, winner: winner.label, winnerId: winner.id, total: vote.total });
     this.resolveVote(vote.target, winner.id);
     return winner.id;
   }
@@ -206,7 +207,7 @@ export class Show {
     twist.apply(this.state.mission, this.state.site, this.now());
     this.state.applied.push(id);
     this.inbox.push(twist.inbox);
-    this.record('twist', { id, label: twist.label, blurb: twist.blurb, kicker: twist.kicker, headline: twist.headline, effect: twist.effect, by });
+    this.record('twist', { id, label: twist.label, blurb: twist.blurb, by });
   }
 
   checkpoint(index: number): void {

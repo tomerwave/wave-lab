@@ -22,7 +22,7 @@ test('first flights visit fires oil shock and fares triple', async () => {
   const page = await get('/site/flights');
   assert.equal(page.status, 200);
   assert.ok(show.snapshot().applied.includes('oil-shock'));
-  assert.match(page.html, /Oil goes vertical/);
+  assert.match(page.html, /Oil goes to the moon/);
   assert.match(page.html, /\$1,920/);
 });
 

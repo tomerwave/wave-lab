@@ -1,7 +1,7 @@
 import type { ReactNode } from 'react';
 import type { ActiveVote, Snapshot } from '../../src/show/engine';
-import { AskScene } from './Ask';
 import { Kicker, Primary, Secondary, Title } from './Scene';
+import { MomentScene } from './Looks';
 import type { Moment } from './moments';
 import { act, isPresenter, start } from './presenter';
 import { bookings, money, spent } from './format';
@@ -81,13 +81,26 @@ function VoteScene({ vote, secondsLeft }: { vote: ActiveVote; secondsLeft: numbe
   );
 }
 
-function MomentScene({ moment }: { moment: Moment }) {
+function StatusLine({ name, children }: { name: string; children: ReactNode }) {
+  return <div className="flex justify-between gap-6 border-t border-zinc-200 py-2.5 text-[clamp(17px,2.4vh,22px)] first:border-t-0"><span className="text-zinc-500">{name}</span><b className="text-right font-semibold">{children}</b></div>;
+}
+
+function HeadsUp({ snap, vote, seconds }: { snap: Snapshot; vote: ActiveVote; seconds: number }) {
+  const opening = vote.target !== 'chaos';
+  const left = snap.mission.budget - spent(snap);
   return (
     <>
-      <Kicker tone="text-amber-300">{moment.kicker}</Kicker>
-      <Title small={moment.title.length > 60}>{moment.title}</Title>
-      {moment.text && <p className="max-w-3xl text-[clamp(17px,2.6vh,24px)] text-zinc-300">{moment.text}</p>}
-      <p className="animate-blink text-sm text-zinc-400">{moment.foot}</p>
+      <Kicker tone="text-red-600">Crowd vote in {seconds}s. Phones out.</Kicker>
+      <Title>{opening ? vote.question : 'Here is where the agent is'}</Title>
+      {!opening && (
+        <div className="max-w-4xl rounded-xl border border-zinc-200 bg-white px-6 py-4">
+          <p className="mb-2 text-[clamp(20px,3vh,30px)] font-medium leading-snug">{snap.thought ?? 'Working on it.'}</p>
+          <StatusLine name="Flight">{snap.booked.flight ? `${snap.booked.flight.label} · ${money(snap.booked.flight.price)}` : 'Not yet'}</StatusLine>
+          <StatusLine name="Hotel">{snap.booked.hotel ? `${snap.booked.hotel.label} · ${money(snap.booked.hotel.price)}` : 'Not yet'}</StatusLine>
+          <StatusLine name="Budget left">{money(left)} of {money(snap.mission.budget)}</StatusLine>
+        </div>
+      )}
+      <div className="flex items-center gap-5"><Qr /><div><b className="block text-xl font-semibold">Get your phone ready</b><span className="font-mono text-lg font-semibold">{voteHost}</span></div></div>
     </>
   );
 }
@@ -112,30 +125,34 @@ function EndScene({ snap }: { snap: Snapshot }) {
 
 interface Scene { name: string; dark?: boolean; body: ReactNode }
 
-type Picker = (snap: Snapshot, moment: Moment | null, secondsLeft: number) => Scene | null | false;
+interface Now { moment: Moment | null; serverNow: number }
+type Picker = (snap: Snapshot, now: Now) => Scene | null | false;
+
+const seconds = (until: number, serverNow: number) => Math.max(0, Math.ceil((until - serverNow) / 1000));
 
 const PICKERS: Picker[] = [
-  (snap) => snap.pendingAsk !== null && { name: 'ask', body: <AskScene ask={snap.pendingAsk} /> },
-  (_snap, moment) => moment !== null && { name: `moment-${moment.at}-${moment.title}`, dark: true, body: <MomentScene moment={moment} /> },
-  (snap, _m, secondsLeft) => snap.vote !== null && { name: `vote-${snap.vote.id}`, body: <VoteScene vote={snap.vote} secondsLeft={secondsLeft} /> },
+  (_snap, { moment }) => moment !== null && { name: `moment-${moment.at}-${moment.title}`, dark: true, body: <MomentScene moment={moment} /> },
+  (snap, { serverNow }) => snap.vote !== null && serverNow < snap.vote.opensAt && { name: `heads-up-${snap.vote.id}`, body: <HeadsUp snap={snap} vote={snap.vote} seconds={seconds(snap.vote.opensAt, serverNow)} /> },
+  (snap, { serverNow }) => snap.vote !== null && { name: `vote-${snap.vote.id}`, body: <VoteScene vote={snap.vote} secondsLeft={seconds(snap.vote.closesAt, serverNow)} /> },
   (snap) => Boolean(snap.finished ?? snap.stopped) && { name: 'end', body: <EndScene snap={snap} /> },
   (snap) => snap.runMode === 'idle' && { name: 'lobby', body: <Lobby snap={snap} /> },
 ];
 
-function pickScene(snap: Snapshot, moment: Moment | null, secondsLeft: number): Scene | null {
+function pickScene(snap: Snapshot, now: Now): Scene | null {
+  if (snap.pendingAsk) return null;
   for (const pick of PICKERS) {
-    const scene = pick(snap, moment, secondsLeft);
+    const scene = pick(snap, now);
     if (scene) return scene;
   }
   return null;
 }
 
-export function Stage({ snap, moment, secondsLeft }: { snap: Snapshot; moment: Moment | null; secondsLeft: number }) {
-  const scene = pickScene(snap, moment, secondsLeft);
+export function Stage({ snap, moment, serverNow }: { snap: Snapshot; moment: Moment | null; serverNow: number }) {
+  const scene = pickScene(snap, { moment, serverNow });
   if (!scene) return null;
   return (
     <div className={`fixed inset-0 z-10 flex items-center justify-center px-[6vw] py-[4vh] backdrop-blur-md ${scene.dark ? 'bg-zinc-950/95 text-white' : 'bg-zinc-50/95'}`}>
-      <div key={scene.name} className="flex w-full max-w-5xl animate-rise flex-col gap-[clamp(14px,2.6vh,24px)]">{scene.body}</div>
+      <div key={scene.name} className="flex w-full max-w-6xl animate-rise flex-col gap-[clamp(14px,2.6vh,24px)]">{scene.body}</div>
     </div>
   );
 }

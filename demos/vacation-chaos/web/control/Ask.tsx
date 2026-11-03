@@ -79,12 +79,12 @@ function Controls({ ask }: { ask: Ask }) {
   return <Answers options={ask.options} />;
 }
 
-export function AskScene({ ask }: { ask: Ask }) {
+export function AskPanel({ ask }: { ask: Ask }) {
   return (
-    <>
+    <aside className="fixed inset-y-0 right-0 z-30 flex w-[min(620px,44vw)] animate-slide flex-col justify-center gap-6 border-l border-zinc-200 bg-white px-10 shadow-2xl">
       <Kicker tone="text-amber-700">{KICKERS[ask.kind]}</Kicker>
       <Title small>{ask.question}</Title>
       <Controls ask={ask} />
-    </>
+    </aside>
   );
 }
