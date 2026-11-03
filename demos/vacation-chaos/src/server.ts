@@ -36,7 +36,7 @@ async function serveStatic(res: ServerResponse, path: string): Promise<void> {
   if (!file.startsWith(PUBLIC)) return send(res, 404, 'Not found');
   const body = await readFile(file).catch(() => null);
   if (!body) return send(res, 404, 'Not found');
-  res.writeHead(200, { 'content-type': CONTENT_TYPES[extname(file)] ?? 'application/octet-stream', 'cache-control': 'max-age=60' });
+  res.writeHead(200, { 'content-type': CONTENT_TYPES[extname(file)] ?? 'application/octet-stream', 'cache-control': 'no-cache' });
   res.end(body);
 }
 

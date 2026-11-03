@@ -7,9 +7,10 @@ const RUNTIME = { replay: 'Scripted replay', local: 'Strands on this laptop', ag
 
 function runline(s) {
   const live = s.runMode === 'local' || s.runMode === 'agentcore';
-  const status = live ? '<i class="dot"></i><b>Live</b>' : s.runMode === 'replay' ? '<i class="dot replay"></i><b>Replay</b>' : '<b>Standby</b>';
-  const model = s.telemetry.model ?? (live ? 'Claude on Bedrock' : 'none');
-  $('runline').innerHTML = `<span>${status}</span><span>Runtime <b>${RUNTIME[s.runMode]}</b></span><span>Model <b>${esc(model)}</b></span><span>Pace <b>${s.pace === 'turbo' ? 'Turbo' : 'Storytelling'}</b></span>`;
+  const status = live ? '<i class="dot"></i><b>Live</b>' : s.runMode === 'replay' ? '<i class="dot replay"></i><b>Replay</b>' : '<i class="dot idle"></i><b>Standby</b>';
+  const model = s.telemetry.model ?? (live ? 'Claude on Bedrock' : 'No model');
+  const badge = (html) => `<span class="badge">${html}</span>`;
+  $('runline').innerHTML = badge(status) + badge(RUNTIME[s.runMode]) + badge(esc(model)) + badge(s.pace === 'turbo' ? 'Turbo' : 'Storytelling');
 }
 
 function cpClass(i, s) {
@@ -19,8 +20,13 @@ function cpClass(i, s) {
 }
 
 function rail(s) {
-  const tags = { vote: 'crowd', auto: 'auto', finale: 'finale', agent: '' };
-  $('rail').innerHTML = meta.checkpoints.map((c, i) => `<div class="${cpClass(i, s)}"><i></i>${esc(c.label)}<em>${tags[c.kind]}</em></div>`).join('');
+  $('rail').innerHTML = meta.checkpoints.map((c, i) => `<div class="${cpClass(i, s)}"><i>${i < s.checkpoint ? '&#10003;' : i + 1}</i>${esc(c.label)}</div>`).join('');
+}
+
+function fitMirror() {
+  const box = $('screen').getBoundingClientRect();
+  const scale = box.width / 1280;
+  Object.assign($('mirror').style, { transform: `scale(${scale})`, height: `${box.height / scale}px` });
 }
 
 function spent(s) {
@@ -43,6 +49,7 @@ function mission(s) {
   const left = s.mission.budget - spent(s);
   $('budget').textContent = money(left);
   $('budget').classList.toggle('alert', left < s.mission.budget * 0.3);
+  $('meter').style.width = `${Math.max(0, Math.min(100, (left / s.mission.budget) * 100))}%`;
   $('budgetSub').textContent = `of ${money(s.mission.budget)}. Spent ${money(spent(s))}.`;
   $('mission').innerHTML = missionLines(s.mission);
   const booked = (label, b) => `<div class="line"><span>${label}</span>${b ? `<b>${esc(b.label)} · ${money(b.price)}</b>` : '<em>pending</em>'}</div>`;
@@ -77,12 +84,12 @@ function stepLine(e) {
 }
 
 function thinking(s) {
-  $('thought').textContent = s.thought ? `"${s.thought}"` : 'Waiting for the mission.';
+  $('thought').textContent = s.thought ?? 'Waiting for the mission.';
   const shown = ['step', 'click', 'booking', 'twist', 'answer'];
   $('steps').innerHTML = s.events.filter((e) => shown.includes(e.type)).slice(-4).reverse().map(stepLine).join('');
   $('ask').classList.toggle('hidden', !s.pendingAsk);
   $('askText').textContent = s.pendingAsk ?? '';
-  if (s.finished) $('thought').textContent = `"${s.finished}"`;
+  if (s.finished) $('thought').textContent = s.finished;
 }
 
 function voteRows(v, cls) {
@@ -142,5 +149,7 @@ function render(s) {
 }
 
 $('voteUrl').textContent = meta.voteUrl.replace(/^https?:\/\//, '');
+fitMirror();
+window.addEventListener('resize', fitMirror);
 new EventSource('/events').onmessage = (e) => render(JSON.parse(e.data));
 setInterval(countdown, 250);

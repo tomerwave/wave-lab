@@ -6,43 +6,45 @@ export interface ControlMeta { checkpoints: readonly { label: string; kind: stri
 
 const json = (value: unknown) => JSON.stringify(value).replace(/</g, '\\u003c');
 
+const LOGO = '<svg viewBox="0 0 24 24" class="logo" aria-hidden="true"><rect width="24" height="24" rx="6" fill="#18181b"/><path d="M6 15c2-4 4-4 6 0s4 4 6 0" stroke="#fafafa" stroke-width="2" fill="none" stroke-linecap="round"/></svg>';
+
 export function controlPage(meta: ControlMeta): string {
   return `${head('Mission Control', 'control.css')}<body>
 <script id="meta" type="application/json">${json(meta)}</script>
-<div class="top"><div><div class="eyebrow">WaveLab · Mission Control</div><h1>Book Tomer a vacation. Do not get fired.</h1></div><div class="runline" id="runline"></div></div>
-<div class="rail" id="rail"></div>
+<header class="top"><div class="title">${LOGO}<div><h1>Mission Control</h1><p class="muted">Book Tomer a vacation. Do not get fired.</p></div></div><div class="runline" id="runline"></div></header>
+<nav class="rail" id="rail"></nav>
 <div class="main">
-  <div class="col">
-    <div class="block"><span class="label">Budget left</span><div class="big" id="budget"></div><div class="sub" id="budgetSub"></div></div>
-    <div class="block"><span class="label">Mission</span><div id="mission"></div></div>
-    <div class="block"><span class="label">Booked</span><div id="booked"></div></div>
-    <div class="block"><span class="label">Memory</span><div id="memory" class="small muted">Nothing recalled yet</div></div>
-  </div>
-  <div class="col center">
-    <div class="frame"><div class="bar"><span>&#9679;&#9679;&#9679;</span><span class="u" id="url">sunnyhop.demo</span><span id="browserLabel">Browser</span></div>
-      <div class="screen"><iframe id="mirror" title="Agent browser mirror" src="/site?mirror=1"></iframe>
-        <div class="ghost" id="ghost"></div>
-        <div class="votecard hidden" id="votecard"><div class="vq" id="voteQ"></div><div id="voteBig"></div>
-          <div class="vfoot"><img src="/qr.svg" alt="QR code to vote" class="qr"><div><div class="label">Vote now</div><div class="url" id="voteUrl"></div><div class="count" id="voteCount"></div></div></div></div>
-        <div class="toast hidden" id="toast"><div class="label">Plot twist</div><div class="tt" id="toastTitle"></div><div id="toastText"></div></div>
-      </div></div>
-    <div class="cap"><span id="click">Mirror of the agent's browser</span><span id="stepNo"></span></div>
-  </div>
-  <div class="col">
-    <div class="block"><span class="label">Thinking</span><div class="thought" id="thought">Waiting for the mission.</div></div>
-    <div class="steps" id="steps"></div>
-    <div class="ask hidden" id="ask"><span class="label">The agent asks you</span><div id="askText"></div></div>
-    <div class="vote" id="vote"></div>
-  </div>
+  <aside class="col">
+    <section class="card pad"><span class="label">Budget left</span><div class="big" id="budget"></div><div class="sub" id="budgetSub"></div><div class="meter"><i id="meter"></i></div></section>
+    <section class="card pad"><span class="label">Mission</span><div id="mission"></div></section>
+    <section class="card pad"><span class="label">Booked</span><div id="booked"></div></section>
+    <section class="card pad"><span class="label">Memory</span><div id="memory" class="small muted">Nothing recalled yet</div></section>
+  </aside>
+  <section class="card browser">
+    <div class="bar"><span class="dots"><i></i><i></i><i></i></span><span class="u" id="url">sunnyhop.demo</span><span class="badge" id="browserLabel">Agent browser</span></div>
+    <div class="screen" id="screen"><iframe id="mirror" title="Agent browser mirror" src="/site?mirror=1"></iframe>
+      <div class="ghost" id="ghost"></div>
+      <div class="votecard hidden" id="votecard"><div class="card votebox"><span class="badge live">Crowd vote</span><div class="vq" id="voteQ"></div><div id="voteBig"></div>
+        <div class="vfoot"><img src="/qr.svg" alt="QR code to vote" class="qr"><div><span class="label">Scan or open</span><div class="url" id="voteUrl"></div></div><div class="count" id="voteCount"></div></div></div></div>
+      <div class="toast hidden" id="toast"><span class="badge warn">Plot twist</span><div class="tt" id="toastTitle"></div><div class="muted small" id="toastText"></div></div>
+    </div>
+    <div class="cap"><span id="click">Waiting for the agent</span><span id="stepNo"></span></div>
+  </section>
+  <aside class="col">
+    <section class="card pad"><span class="label">Thinking</span><div class="thought" id="thought">Waiting for the mission.</div></section>
+    <section class="card ask hidden" id="ask"><span class="label">The agent asks you</span><div id="askText"></div></section>
+    <section class="card pad grow"><span class="label">Activity</span><div class="steps" id="steps"></div></section>
+    <section class="card pad" id="vote"></section>
+  </aside>
 </div>
-<div class="tele" id="tele"></div>
-<div class="overlay hidden" id="overlay"></div>
+<footer class="tele" id="tele"></footer>
+<div class="card overlay hidden" id="overlay"></div>
 <script src="/static/control.js" defer></script><script src="/static/presenter.js" defer></script></body></html>`;
 }
 
 export function votePage(): string {
   return `${head('Vote · Vacation Chaos', 'vote.css')}<body>
-<main><div class="eyebrow">WaveLab · Vacation Chaos</div><h1 id="q">Waiting for the next vote</h1>
+<main><div class="brand"><span class="dot"></span>Vacation Chaos · live vote</div><h1 id="q">Waiting for the next vote</h1>
 <p class="sub" id="sub">Keep this page open. When a vote opens, it shows up here.</p>
 <div id="options"></div><p class="sub" id="status"></p></main>
 <script src="/static/vote.js" defer></script></body></html>`;
