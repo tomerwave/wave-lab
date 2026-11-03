@@ -40,17 +40,17 @@ h1{font-size:1.7rem}
 .ghost.on{opacity:.92}
 .cap{display:flex;justify-content:space-between;font-size:11.5px;color:var(--ink-45);margin-top:6px}
 
-.votecard{position:absolute;inset:0;background:color-mix(in srgb,var(--paper) 96%,transparent);padding:4vh 4vw;display:flex;flex-direction:column;justify-content:center;gap:2vh}
-.vq{font-family:var(--display);font-size:2.4rem;font-weight:500;letter-spacing:-.015em}
+.votecard{position:absolute;inset:0;background:color-mix(in srgb,var(--paper) 96%,transparent);padding:3vh 3vw;display:flex;flex-direction:column;justify-content:center;gap:1.4vh;overflow:hidden}
+.vq{font-family:var(--display);font-size:clamp(1.5rem,4.2vh,2.6rem);font-weight:500;letter-spacing:-.015em}
 .vbig{margin:.6vh 0}
-.vbig .row{display:flex;justify-content:space-between;font-size:1.2rem;margin-bottom:6px}
+.vbig .row{display:flex;justify-content:space-between;font-size:clamp(.95rem,2.2vh,1.25rem);margin-bottom:4px}
 .vbig .t{height:10px;background:var(--paper-warm);border:1px solid var(--hair)}
 .vbig .t i{display:block;height:100%;background:var(--sage);transition:width .4s}
 .vbig.lead .t i{background:var(--sage-deep)}
 .vfoot{display:flex;gap:24px;align-items:center;margin-top:1vh}
-.vfoot .qr{width:150px;height:150px}
+.vfoot .qr{width:clamp(90px,17vh,170px);height:clamp(90px,17vh,170px)}
 .vfoot .url{font-family:var(--display);font-size:1.4rem}
-.vfoot .count{font-family:var(--display);font-size:3rem;font-weight:500;line-height:1}
+.vfoot .count{font-family:var(--display);font-size:clamp(2rem,5.5vh,3.4rem);font-weight:500;line-height:1}
 
 .toast{position:absolute;left:24px;right:24px;top:24px;background:var(--paper);border:1px solid var(--alert);box-shadow:inset 4px 0 0 var(--alert),0 12px 40px rgba(0,0,0,.12);padding:16px 20px;animation:drop .5s ease-out}
 .toast .tt{font-family:var(--display);font-size:1.7rem;font-weight:500;margin:2px 0 4px}
