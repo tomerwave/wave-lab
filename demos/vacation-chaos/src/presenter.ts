@@ -53,6 +53,7 @@ export const ACTIONS: Record<string, Action> = {
   'extend-vote': (show) => show.extendVote(15_000),
   twist: (show, b) => show.applyTwist(str(b.id) ?? ''),
   checkpoint: (show, b) => show.checkpoint(Number(b.index)),
+  budget: (show, b) => show.setBudget(Number(b.budget)),
   pace: (show, b) => show.setPace(b.pace === 'turbo' ? 'turbo' : 'story'),
   answer: (show, b) => show.answer(str(b.text) ?? 'OK', b.approve === true),
   captcha: (show) => { show.site.captcha = 'solved'; show.record('step', { kind: 'Human', text: 'The presenter solved the human check' }); },

@@ -151,6 +151,9 @@ cite{font-style:normal;font-size:12px;color:var(--muted)}
 .line{display:flex;justify-content:space-between;gap:16px;padding:6px 0;font-size:13px;border-bottom:1px solid #eef1f5}
 .line.total{font-size:16px;font-weight:700;border-bottom:0;padding-top:10px}
 .upsell{display:flex;gap:8px;align-items:center;font-size:13px;background:#fff4e5;border:1px solid #ffd59e;border-radius:8px;padding:8px 10px;margin-top:6px}
+.upsell svg{width:14px;height:14px;flex:none}
+.upsell.off{background:#f6f7f9;border-color:#e3e6ea;color:#5b6470}
+.upsell a{margin-left:auto;font-weight:600;white-space:nowrap}
 .decline{font-size:11px;color:#9aa3ad}
 .captcha{border:1px solid var(--line);border-radius:12px;padding:14px;display:flex;flex-direction:column;gap:6px;max-width:300px;background:#fafbfc}
 .cgrid{display:grid;grid-template-columns:repeat(3,62px);gap:5px;margin:4px 0}

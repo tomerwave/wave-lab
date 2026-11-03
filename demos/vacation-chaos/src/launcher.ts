@@ -21,10 +21,14 @@ export class AgentLauncher {
     this.stop();
     const showUrl = runtime === 'local' ? `http://localhost:${this.config.port}` : this.config.publicUrl;
     const env = { ...agentEnvironment(this.config, showUrl), AGENT_TOKEN: show.issueAgentToken() };
-    this.child = spawn('uv', [...args, ...extraArgs], { cwd: AGENT_DIR, env, stdio: ['ignore', 'pipe', 'pipe'] });
-    this.child.stdout?.on('data', (d: Buffer) => writeLine(`[agent] ${d.toString().trimEnd()}`));
-    this.child.stderr?.on('data', (d: Buffer) => writeLine(`[agent] ${d.toString().trimEnd()}`));
-    this.child.on('exit', (code) => writeLine(`[agent] exited with ${code}`));
+    const child = spawn('uv', [...args, ...extraArgs], { cwd: AGENT_DIR, env, stdio: ['ignore', 'pipe', 'pipe'] });
+    this.child = child;
+    child.stdout?.on('data', (d: Buffer) => writeLine(`[agent] ${d.toString().trimEnd()}`));
+    child.stderr?.on('data', (d: Buffer) => writeLine(`[agent] ${d.toString().trimEnd()}`));
+    child.on('exit', (code) => {
+      writeLine(`[agent] exited with ${code}`);
+      if (this.child === child) show.agentStopped('The agent stopped before it finished the booking.');
+    });
     return true;
   }
 

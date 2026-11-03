@@ -22,31 +22,55 @@ async function act(action, body = {}) {
   if (res.status === 401) sessionStorage.removeItem('vc_key');
 }
 
-const button = (label, action, body, cls = '') => `<button class="${cls}" data-act="${action}" data-body='${JSON.stringify(body ?? {})}'>${label}</button>`;
+const attr = (v) => v.replace(/&/g, '&amp;').replace(/'/g, '&#39;').replace(/</g, '&lt;');
+const button = (label, action, body, cls = '') => `<button class="${cls}" data-act="${action}" data-body='${attr(JSON.stringify(body ?? {}))}'>${label}</button>`;
 
-function twistButtons() {
-  return presenterMeta.twists.map((t) => button(t.label, 'twist', { id: t.id })).join('');
+async function start() {
+  await act('pace', { pace: 'story' });
+  await act('start-live', { runtime: presenterMeta.defaultRuntime });
+}
+
+async function humanCheckDone() {
+  await act('captcha');
+  await act('answer', { text: 'Done, I solved the human check.', approve: false });
+}
+
+function pickGoat(cell) {
+  if (!cell.classList.contains('goat')) {
+    cell.classList.remove('nope');
+    void cell.offsetWidth;
+    cell.classList.add('nope');
+    return;
+  }
+  cell.classList.add('picked');
+  const grid = cell.parentElement;
+  if (grid.querySelectorAll('.goat:not(.picked)').length === 0) void humanCheckDone();
+}
+
+function typedAnswer() {
+  const text = document.getElementById('askText')?.value.trim();
+  if (text) void act('answer', { text, approve: false });
+}
+
+const SPECIAL = { start, 'type-answer': typedAnswer, more: togglePanel };
+
+function onClick(e) {
+  const goat = e.target.closest('[data-goat]');
+  if (goat) return pickGoat(goat);
+  const el = e.target.closest('button[data-act]');
+  if (!el) return;
+  const special = SPECIAL[el.dataset.act];
+  if (special) return special();
+  void act(el.dataset.act, JSON.parse(el.dataset.body));
 }
 
 function buildPanel() {
-  panel.innerHTML = `<div class="label">Presenter · press P to hide</div>
-<h3>Run</h3>${button('Start replay', 'start-replay', {}, 'primary')}${button('Start live: local', 'start-live', { runtime: 'local' }, 'primary')}${button('Start live: AgentCore', 'start-live', { runtime: 'agentcore' }, 'primary')}${button('Turbo finale', 'turbo')}${button('Reset', 'reset')}
-<h3>Agent process</h3>${button('Relaunch agent', 'launch-agent')}${button('Pull the plug', 'stop-agent')}<input id="modelId" placeholder="Brain transplant: Bedrock model id">${button('Relaunch with this model', 'launch-agent', { runtime: 'agentcore', withModel: true })}
+  const twists = presenterMeta.twists.map((t) => button(t.label, 'twist', { id: t.id })).join('');
+  panel.innerHTML = `<div class="label">Backstage · press P to hide</div>
+<h3>Run</h3>${button('Start', 'start', {}, 'primary')}${button('Start on this laptop', 'start-live', { runtime: 'local' })}${button('Scripted replay', 'start-replay')}${button('Turbo finale', 'turbo')}${button('Stop and go back to the lobby', 'reset')}
 <h3>Pace</h3>${button('Storytelling', 'pace', { pace: 'story' })}${button('Turbo', 'pace', { pace: 'turbo' })}
-<h3>Crowd</h3>${button('Tackle the agent: open vote', 'vote', {}, 'primary')}${button('Close vote now', 'close-vote')}${button('Extend 15s', 'extend-vote')}
-<h3>Answer the agent</h3><input id="answerText" placeholder="Your answer" value="Go ahead.">${button('Answer', 'answer', { approve: false })}${button('Approve overspend', 'answer', { approve: true })}${button('I solved the human check', 'captcha')}
-<h3>Fire a twist now</h3>${twistButtons()}`;
-}
-
-function buildStartBar() {
-  const bar = document.createElement('div');
-  bar.className = 'startbar';
-  const runtime = presenterMeta.defaultRuntime;
-  bar.innerHTML = button(`Start on ${runtime === 'agentcore' ? 'AgentCore' : 'this laptop'}`, 'start-live', { runtime }, 'primary')
-    + button('Approve spend', 'answer', { approve: true, text: 'Approved, go ahead.' })
-    + button('Human check done', 'captcha') + button('Turbo', 'turbo') + button('Stop', 'reset') + button('More', 'more');
-  document.querySelector('header.top').append(bar);
-  bar.addEventListener('click', onClick);
+<h3>Crowd</h3>${button('Open a vote', 'vote')}${button('Close vote now', 'close-vote')}${button('Extend 15s', 'extend-vote')}
+<h3>Fire a twist now</h3>${twists}`;
 }
 
 function togglePanel() {
@@ -54,25 +78,9 @@ function togglePanel() {
   panel.classList.toggle('hidden');
 }
 
-function bodyFor(el) {
-  const body = JSON.parse(el.dataset.body);
-  if (el.dataset.act === 'answer' && !body.text) body.text = document.getElementById('answerText').value;
-  if (body.withModel) body.model = document.getElementById('modelId').value;
-  return body;
-}
-
-async function onClick(e) {
-  const el = e.target.closest('button[data-act]');
-  if (!el) return;
-  if (el.dataset.act === 'more') return togglePanel();
-  await act(el.dataset.act, bodyFor(el));
-  if (el.dataset.act === 'captcha') await act('answer', { text: 'Done, I solved the human check.', approve: false });
-}
-
-panel.addEventListener('click', onClick);
 keyFromLink();
-if (sessionStorage.getItem('vc_key')) buildStartBar();
-
+window.presenter = { on: Boolean(sessionStorage.getItem('vc_key')), button };
+document.addEventListener('click', onClick);
 document.addEventListener('keydown', (e) => {
   if (e.key.toLowerCase() !== 'p' || e.target.tagName === 'INPUT') return;
   togglePanel();

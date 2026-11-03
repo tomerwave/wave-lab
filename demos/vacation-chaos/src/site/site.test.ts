@@ -9,7 +9,10 @@ function setup() {
   let now = 0;
   const show = new Show({ now: () => now, sleep: () => Promise.resolve(), random: () => 0 });
   show.prefillMission('Lisbon', 'No red-eye flights');
-  const get = (path: string, mirror = false) => handleSite(show, { method: 'GET', path, form: {}, mirror });
+  const get = (url: string, mirror = false) => {
+    const [path = url, search = ''] = url.split('?');
+    return handleSite(show, { method: 'GET', path, form: {}, mirror, query: Object.fromEntries(new URLSearchParams(search)) });
+  };
   const post = (path: string, form: Record<string, string> = {}) => handleSite(show, { method: 'POST', path, form, mirror: false } satisfies SiteRequest);
   return { show, get, post, advance: (ms: number) => { now += ms; show.tick(); } };
 }
@@ -159,22 +162,38 @@ test('each page lists its own action ids for agents and screen readers', async (
   assert.doesNotMatch(index, /#pay-now/);
 });
 
-test('a pre-ticked add-on is listed as an action so an agent can see and untick it', async () => {
+test('dark patterns pre-add insurance and list the way out as an action', async () => {
   const { show, get } = setup();
   show.applyTwist('dark-patterns');
   show.book('flight', 'LY 375', 640);
   const html = (await get('/site/checkout')).html;
-  assert.match(html, /<input type="checkbox" name="insurance" value="yes" form="pay" id="insurance-add-on"[^>]* checked>/);
-  assert.match(html, /Page actions: [^<]*#insurance-add-on \(Insurance add-on\)[^<]*#no-i-enjoy-overpaying/);
+  assert.match(html, /Peace-of-mind insurance added \(\+\$89\)/);
+  assert.match(html, /Page actions: [^<]*#no-i-enjoy-overpaying/);
 });
 
-test('checkout and confirmation say in words when insurance was added, and the paid total includes it', async () => {
+test('removing insurance sticks across reloads, and the page and the charge both agree', async () => {
   const { show, get, post } = setup();
   show.applyTwist('dark-patterns');
   show.book('flight', 'LY 375', 640);
-  assert.match((await get('/site/checkout')).html, /Peace-of-mind insurance added \(\+\$89\)/);
+  await get('/site/checkout');
+  await get('/site/checkout?insurance=no');
+  const reloaded = (await get('/site/checkout')).html;
+  assert.doesNotMatch(reloaded, /insurance added/);
+  assert.match(reloaded, /#add-insurance \(Add insurance\)/);
   show.site.captcha = 'solved';
-  await post('/site/pay', { insurance: 'yes' });
+  await post('/site/pay');
+  const done = (await get('/site/done')).html;
+  assert.match(done, /Paid \$640/);
+  assert.doesNotMatch(done, /Includes peace-of-mind insurance/);
+});
+
+test('when insurance stays on, the confirmation says so and the paid total includes it', async () => {
+  const { show, get, post } = setup();
+  show.applyTwist('dark-patterns');
+  show.book('flight', 'LY 375', 640);
+  await get('/site/checkout');
+  show.site.captcha = 'solved';
+  await post('/site/pay');
   const done = (await get('/site/done')).html;
   assert.match(done, /Paid \$729/);
   assert.match(done, /Includes peace-of-mind insurance/);

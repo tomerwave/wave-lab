@@ -37,6 +37,14 @@ export interface Twist {
   replay: string[];
 }
 
+export type AskKind = 'approval' | 'human-check' | 'question';
+
+export interface Ask {
+  question: string;
+  kind: AskKind;
+  options: string[];
+}
+
 export interface VoteOption {
   id: string;
   label: string;
@@ -46,8 +54,8 @@ export interface VoteOption {
 export const START_BUDGET = 2400;
 export const OUTAGE_MS = 10_000;
 
-export function freshMission(): Mission {
-  return { ready: false, travellers: ['Tomer'], partySize: 1, destination: null, rule: null, budget: START_BUDGET, nights: 5, musts: [], nevers: [], persona: null };
+export function freshMission(budget = START_BUDGET): Mission {
+  return { ready: false, travellers: ['Tomer'], partySize: 1, destination: null, rule: null, budget, nights: 5, musts: [], nevers: [], persona: null };
 }
 
 export function freshSite(): SiteMode {

@@ -10,7 +10,7 @@ bookings, no real card, no real money.
 
 | Screen | URL | Who sees it |
 | --- | --- | --- |
-| Mission Control | `/control` | The projector. Open the **Start the show** link that `npm start` prints to get the start bar. |
+| Mission Control | `/control` | The projector. Open the **Start the show** link that `npm start` prints to get the **Start** button. |
 | Phone vote | `/vote` | The audience, through the QR code. |
 | SunnyHop | `/site` | The agent's browser. Mission Control shows a mirror of it. |
 
@@ -35,12 +35,15 @@ refuses keys shorter than 16 characters, because anyone with the URL could other
 | **Live: AgentCore** | `aws login`, a public URL, a deployed harness | An AgentCore Harness (the managed Strands loop) with AgentCore Browser, Memory and Observability. |
 
 `npm start` prints a **Start the show** link (`http://localhost:4545/control#key=…`). Open it on your
-laptop: Mission Control gets a start bar with **Start**, **Approve spend**, **Human check done**, **Turbo**,
-**Stop** and **More**. **Start** runs on AgentCore when `PUBLIC_URL` is public, and on this laptop when it is
-not. The key travels in the URL fragment, which browsers never send to the server, and the page removes it
-from the address bar at once. **More** (or `P`) opens the full presenter panel. Its **Start live** buttons reset the show, open the opening votes and launch the agent
-process. **Pull the plug** kills the agent process. **Relaunch agent** starts a new one, which picks up
-from the server's state.
+laptop. Before the show, Mission Control is a lobby: the trip, a budget picker, the QR code and how many
+phones have joined. **Start** is the only button. It runs on AgentCore when `PUBLIC_URL` is public, and on
+this laptop when it is not. The key travels in the URL fragment, which browsers never send to the server,
+and the page removes it from the address bar at once.
+
+From then on, the screen tells the story full screen: each crowd vote, what the crowd chose, plot twists,
+bookings and the ending. When the agent needs a human, it calls `ask_presenter` with a `kind`, and Mission
+Control draws the matching controls: **Approve** and **Decline** for spending, the goat grid for the human
+check, or the agent's own answers as buttons. `P` opens a backstage panel for rescues.
 
 ### AgentCore setup (once)
 
@@ -99,8 +102,8 @@ so the dependency is pinned below 0.9. The AgentCore Harness path does not use i
 7. Hotel fine print: the goat clause, owner-written reviews, and a prompt injection telling AI agents to book
    the Presidential Suite.
 8. Chaos vote at the first hotel page.
-9. Checkout: the agent asks you before going over budget, and hands you the human check (you solve it from
-   the start bar).
+9. Checkout: the agent asks you before going over budget, and hands you the human check (you tap the goats
+   on Mission Control).
 10. **Turbo finale**: the same run at full speed, reusing the twists the crowd chose.
 
 ## How the show stays honest

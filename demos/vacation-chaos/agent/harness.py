@@ -96,7 +96,7 @@ def harness_config(settings: config.Settings) -> dict:
         "tools": [BROWSER],
         "allowedTools": ALLOWED_TOOLS,
         "truncation": TRUNCATION,
-        "maxIterations": 80,
+        "maxIterations": 120,
         "maxTokens": TOKENS_PER_RUN,
         "timeoutSeconds": RUN_TIMEOUT_SECONDS,
     }

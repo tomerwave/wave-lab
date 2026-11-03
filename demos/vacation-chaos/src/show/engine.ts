@@ -1,6 +1,6 @@
 import { randomUUID } from 'node:crypto';
 import { CHAOS_POOL, DESTINATIONS, RULES, TWISTS } from './twists.js';
-import { freshMission, freshSite, type Mission, type Pace, type RunMode, type SiteMode, type VoteOption } from './types.js';
+import { START_BUDGET, freshMission, freshSite, type Ask, type AskKind, type Mission, type Pace, type RunMode, type SiteMode, type VoteOption } from './types.js';
 
 export const VOTE_MS = 30_000;
 export const THINK_DELAY: Record<Pace, number> = { story: 2500, turbo: 0 };
@@ -16,22 +16,22 @@ export const CHECKPOINTS = [
 
 const CHAOS_CHECKPOINTS = [5, 8, 10];
 
-export type EventType = 'thought' | 'step' | 'page' | 'click' | 'booking' | 'twist' | 'vote' | 'checkpoint' | 'ask' | 'answer' | 'finish' | 'telemetry' | 'reset';
+export type EventType = 'thought' | 'step' | 'page' | 'click' | 'booking' | 'twist' | 'vote' | 'checkpoint' | 'ask' | 'answer' | 'finish' | 'stopped' | 'telemetry' | 'reset';
 export interface ShowEvent { at: number; type: EventType; data: Record<string, unknown> }
 export type VoteTarget = 'destination' | 'rule' | 'chaos';
 export interface ActiveVote { id: string; target: VoteTarget; question: string; options: VoteOption[]; tally: Record<string, number>; total: number; closesAt: number }
 export interface Booking { label: string; price: number }
 export interface Telemetry { toolCalls: number; inputTokens: number; outputTokens: number; latencyMs: number; model: string | null }
 export interface Haggle { hotelId: string; offer: number; accepted: boolean; reply: string }
-export interface Cart { insurance: boolean; haggle: Haggle | null }
+export interface Cart { insurance: boolean | null; haggle: Haggle | null }
 export interface ToolReply { mission: Mission; inbox: string[]; progress: { booked: Snapshot['booked']; lastPage: string } }
 
 export interface Snapshot {
   runMode: RunMode; pace: Pace; checkpoint: number; mission: Mission; site: SiteMode; vote: ActiveVote | null;
   lastResult: { question: string; winner: string; total: number } | null;
   booked: { flight: Booking | null; hotel: Booking | null }; applied: string[]; route: string; lastClick: string | null;
-  thought: string | null; pendingAsk: string | null; approvedOverspend: boolean; finished: string | null;
-  telemetry: Telemetry; cart: Cart; chaosVotes: number; events: ShowEvent[];
+  thought: string | null; pendingAsk: Ask | null; approvedOverspend: boolean; finished: string | null; stopped: string | null;
+  telemetry: Telemetry; cart: Cart; chaosVotes: number; audience: number; events: ShowEvent[];
 }
 
 interface ShowOptions { now?: () => number; sleep?: (ms: number) => Promise<void>; random?: () => number }
@@ -48,6 +48,8 @@ export class Show {
   private readonly random: () => number;
   private state!: Snapshot;
   private voters = new Map<string, string>();
+  private audience = new Set<string>();
+  private startBudget = START_BUDGET;
   private inbox: string[] = [];
   private listeners = new Set<(s: Snapshot) => void>();
   private waiters: Array<{ resolve: () => void; reject: (e: Error) => void }> = [];
@@ -88,11 +90,11 @@ export class Show {
   reset(runMode: RunMode): void {
     const pace = this.state?.pace ?? 'story';
     this.state = {
-      runMode, pace, checkpoint: 0, mission: freshMission(), site: freshSite(), vote: null, lastResult: null,
+      runMode, pace, checkpoint: 0, mission: freshMission(this.startBudget), site: freshSite(), vote: null, lastResult: null,
       booked: { flight: null, hotel: null }, applied: [], route: '/site', lastClick: null, thought: null,
-      pendingAsk: null, approvedOverspend: false, finished: null,
+      pendingAsk: null, approvedOverspend: false, finished: null, stopped: null,
       telemetry: { toolCalls: 0, inputTokens: 0, outputTokens: 0, latencyMs: 0, model: null },
-      cart: { insurance: false, haggle: null }, chaosVotes: 0, events: [],
+      cart: { insurance: null, haggle: null }, chaosVotes: 0, audience: this.audience.size, events: [],
     };
     this.voters.clear();
     this.inbox = [];
@@ -120,6 +122,20 @@ export class Show {
   }
 
   setPace(pace: Pace): void { this.state.pace = pace; this.changed(); }
+
+  setBudget(budget: number): void {
+    if (!Number.isInteger(budget) || budget < 100 || budget > 100_000 || this.state.mission.ready) return;
+    this.startBudget = budget;
+    this.state.mission.budget = budget;
+    this.changed();
+  }
+
+  join(voterId: string): void {
+    if (this.audience.has(voterId)) return;
+    this.audience.add(voterId);
+    this.state.audience = this.audience.size;
+    this.changed();
+  }
   setRunMode(runMode: RunMode): void { this.state.runMode = runMode; this.changed(); }
 
   beginOpening(): void {
@@ -219,11 +235,11 @@ export class Show {
     return this.reply(0);
   }
 
-  ask(question: string): Promise<string> {
+  ask(question: string, kind: AskKind = 'question', options: string[] = []): Promise<string> {
     this.state.telemetry.toolCalls += 1;
     if (this.pendingAnswer) return this.pendingAnswer.promise;
-    this.state.pendingAsk = question;
-    this.record('ask', { question });
+    this.state.pendingAsk = { question, kind, options };
+    this.record('ask', { question, kind, options });
     let resolve!: (text: string) => void, reject!: (e: Error) => void;
     const promise = new Promise<string>((res, rej) => { resolve = res; reject = rej; });
     this.pendingAnswer = { promise, resolve, reject };
@@ -241,6 +257,12 @@ export class Show {
   book(item: 'flight' | 'hotel', label: string, price: number): void {
     this.state.booked[item] = { label, price };
     this.record('booking', { item, label, price });
+  }
+
+  agentStopped(reason: string): void {
+    if (this.state.finished || this.state.stopped) return;
+    this.state.stopped = reason;
+    this.record('stopped', { reason });
   }
 
   finish(summary: string): void {

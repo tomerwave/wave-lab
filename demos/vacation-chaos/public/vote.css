@@ -30,5 +30,4 @@ button.on .fill{background:#e4e4e7}
 .status{margin-top:14px;font-weight:600;font-size:14px}
 .now{padding:14px 16px}
 .now p{font-size:15px;font-weight:500;margin:6px 0 4px;line-height:1.4}
-.step{font-size:12px;color:var(--muted)}
 footer{font-size:11px;color:var(--subtle);padding:10px 18px 24px}

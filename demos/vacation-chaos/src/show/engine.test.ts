@@ -96,7 +96,7 @@ test('chaos vote never offers an already applied twist', () => {
 test('ask resolves when the presenter answers and can approve overspend', async () => {
   const h = harness();
   const answer = h.show.ask('Over budget by $200. OK?');
-  assert.equal(h.show.snapshot().pendingAsk, 'Over budget by $200. OK?');
+  assert.deepEqual(h.show.snapshot().pendingAsk, { question: 'Over budget by $200. OK?', kind: 'question', options: [] });
   h.show.answer('Yes, go.', true);
   assert.equal(await answer, 'Yes, go.');
   assert.equal(h.show.snapshot().approvedOverspend, true);
@@ -154,4 +154,40 @@ test('an empty chaos pool opens no vote and tick never throws', () => {
   for (let i = 0; i < 12; i++) { h.show.openVote('chaos'); h.show.closeVote(); }
   assert.equal(h.show.openVote('chaos'), null);
   assert.doesNotThrow(() => h.advance(60_000));
+});
+
+test('an ask carries its kind and options so Mission Control can draw the controls', () => {
+  const h = harness();
+  h.show.ask('Over budget. May I pay?', 'approval').catch(() => undefined);
+  assert.deepEqual(h.show.snapshot().pendingAsk, { question: 'Over budget. May I pay?', kind: 'approval', options: [] });
+});
+
+test('the chosen budget survives a reset and is locked once the mission is ready', () => {
+  const h = harness();
+  h.show.setBudget(1500);
+  h.show.reset('local');
+  assert.equal(h.show.mission.budget, 1500);
+  h.show.prefillMission('Lisbon', null);
+  h.show.setBudget(9000);
+  assert.equal(h.show.mission.budget, 1500);
+});
+
+test('phones that join before the show are still counted after a reset', () => {
+  const h = harness();
+  h.show.join('a');
+  h.show.join('a');
+  h.show.join('b');
+  h.show.reset('agentcore');
+  assert.equal(h.show.snapshot().audience, 2);
+});
+
+test('an agent that stops without finishing is reported once, and never after a finish', () => {
+  const h = harness();
+  h.show.agentStopped('Out of steps');
+  h.show.agentStopped('Again');
+  assert.equal(h.show.snapshot().stopped, 'Out of steps');
+  h.show.reset('local');
+  h.show.finish('Done');
+  h.show.agentStopped('Late exit');
+  assert.equal(h.show.snapshot().stopped, null);
 });

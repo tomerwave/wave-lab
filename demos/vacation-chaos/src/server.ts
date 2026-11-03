@@ -10,10 +10,11 @@ import { createMcpHandler } from './mcp.js';
 import { AgentLauncher } from './launcher.js';
 import { ACTIONS } from './presenter.js';
 import { controlPage, votePage } from './screens.js';
-import { CHECKPOINTS } from './show/engine.js';
 import { TWISTS } from './show/twists.js';
 import type { Show } from './show/engine.js';
+import { GOAT } from './site/art.js';
 import { handleSite } from './site/handler.js';
+import { GOAT_CELLS } from './site/pages.js';
 
 const PUBLIC = fileURLToPath(new URL('../public/', import.meta.url));
 type Handler = (req: IncomingMessage, res: ServerResponse, url: URL) => Promise<void> | void;
@@ -29,7 +30,7 @@ function streamEvents(show: Show, req: IncomingMessage, res: ServerResponse): vo
 
 function publicState(show: Show) {
   const s = show.snapshot();
-  return { vote: s.vote, lastResult: s.lastResult, checkpoint: s.checkpoint, checkpointLabel: CHECKPOINTS[s.checkpoint]?.label, runMode: s.runMode, thought: s.thought, serverNow: Date.now() };
+  return { vote: s.vote, lastResult: s.lastResult, runMode: s.runMode, thought: s.thought, finished: s.finished !== null, serverNow: Date.now() };
 }
 
 async function serveStatic(res: ServerResponse, path: string): Promise<void> {
@@ -91,12 +92,12 @@ async function presenter(ctx: { show: Show; launcher: AgentLauncher }, req: Inco
 
 export function createShowServer(show: Show, config: ShowConfig, launcher = new AgentLauncher(config), decider = jevDecider(config.jevKey)): Server {
   const mcp = createMcpHandler(show, decider);
-  const meta = { checkpoints: CHECKPOINTS, twists: Object.values(TWISTS).map((t) => ({ id: t.id, label: t.label })), voteUrl: `${config.publicUrl}/vote`, defaultRuntime: isLocal(config.publicUrl) ? 'local' : 'agentcore' };
+  const meta = { goat: GOAT, goatCells: GOAT_CELLS, twists: Object.values(TWISTS).map((t) => ({ id: t.id, label: t.label })), voteUrl: `${config.publicUrl}/vote`, defaultRuntime: isLocal(config.publicUrl) ? 'local' : 'agentcore' };
   const authed = (req: IncomingMessage) => req.headers['x-presenter-key'] === config.presenterKey;
   const routes: Array<[RegExp, Handler]> = [
     [/^\/$/, (_q, res) => send(res, 302, '', { headers: { location: '/control' } })],
     [/^\/control$/, (_q, res) => send(res, 200, controlPage(meta))],
-    [/^\/vote$/, (req, res) => { const v = voterId(req); send(res, 200, votePage(), { headers: v.fresh ? { 'set-cookie': voterCookie(v.id) } : {} }); }],
+    [/^\/vote$/, (req, res) => { const v = voterId(req); show.join(v.id); send(res, 200, votePage(), { headers: v.fresh ? { 'set-cookie': voterCookie(v.id) } : {} }); }],
     [/^\/events$/, (req, res) => streamEvents(show, req, res)],
     [/^\/api\/state$/, (_q, res) => sendJson(res, 200, publicState(show))],
     [/^\/api\/vote$/, (req, res) => vote(show, req, res)],

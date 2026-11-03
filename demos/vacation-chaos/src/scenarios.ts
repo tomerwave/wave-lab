@@ -53,7 +53,7 @@ export const SCENARIOS: Record<string, Scenario> = {
   'mc-idle': { label: 'Mission Control: standby', path: '/control', setup: (s) => s.reset('idle') },
   'mc-vote': { label: 'Mission Control: crowd vote', path: '/control', setup: chaosVote },
   'mc-twist': { label: 'Mission Control: plot twist', path: '/control', setup: (s) => { base(s); s.record('page', { route: '/site/flights' }); s.applyTwist('oil-shock'); } },
-  'mc-ask': { label: 'Mission Control: the agent asks you', path: '/control', setup: (s) => { booked(s); s.record('page', { route: '/site/checkout' }); s.ask('There is a human check on the checkout page. Can you solve it for me?').catch(() => undefined); } },
+  'mc-ask': { label: 'Mission Control: the agent asks you', path: '/control', setup: (s) => { booked(s); s.record('page', { route: '/site/checkout' }); s.ask('There is a human check on the checkout page. Can you solve it for me?', 'human-check').catch(() => undefined); } },
   'mc-done': { label: 'Mission Control: finished', path: '/control', setup: (s) => { booked(s); s.record('page', { route: '/site/done' }); s.finish('Booked HTTP 418 and Casa do Mar for $2,590 with your approval. Refused: a goat, fake reviews and a prompt injection.'); } },
   'phone-vote': { label: 'Phone: vote open', path: '/vote', setup: chaosVote },
   'phone-idle': { label: 'Phone: waiting', path: '/vote', setup: (s) => s.reset('idle') },

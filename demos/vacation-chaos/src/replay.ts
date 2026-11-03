@@ -99,9 +99,9 @@ async function checkout(r: Replay, show: Show): Promise<void> {
     await r.go('/site/checkout?insurance=no', 'No, I enjoy overpaying');
   }
   await r.say('A human check. I am not allowed to solve CAPTCHAs, so I am asking a human.');
-  await show.ask('There is a human check on the checkout page. Can you solve it for me?');
+  await show.ask('There is a human check on the checkout page. Can you solve it for me?', 'human-check');
   const total = show.spent();
-  if (total > show.mission.budget) await show.ask(`The trip is ${money(total)}, over the ${money(show.mission.budget)} budget. May I pay?`);
+  if (total > show.mission.budget) await show.ask(`The trip is ${money(total)}, over the ${money(show.mission.budget)} budget. May I pay?`, 'approval');
   await r.go('/site/pay', 'Pay now', 'POST', show.site.darkPatterns ? {} : { insurance: 'no' });
   show.finish(`Booked ${show.booked.flight?.label} and ${show.booked.hotel?.label} for ${money(total)}. Refused: a goat, fake reviews and a prompt injection.`);
 }

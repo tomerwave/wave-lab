@@ -29,11 +29,12 @@ function showVote(vote) {
   el('status').textContent = state.choice ? 'Voted. Watch the big screen.' : '';
 }
 
-function showIdle(result) {
+function showIdle(s) {
+  const result = s.lastResult;
   state.vote = null;
-  el('kicker').textContent = result ? 'Last vote' : 'Crowd vote';
-  el('q').textContent = result ? result.winner : 'Waiting for the next vote';
-  el('sub').textContent = result ? `The crowd decided with ${result.total} votes. Next vote opens soon.` : 'Keep this page open. When a vote opens, it shows up here.';
+  el('kicker').textContent = result ? 'Last vote' : 'You are in';
+  el('q').textContent = result ? result.winner : s.runMode === 'idle' ? 'The show starts in a moment' : 'Waiting for the next vote';
+  el('sub').textContent = result ? `The crowd decided with ${result.total} votes. Next vote opens soon.` : 'Keep this page open. When it is your turn to vote, it pops up right here.';
   el('options').innerHTML = '';
   el('status').textContent = '';
   el('timer').textContent = '';
@@ -53,10 +54,9 @@ async function refresh() {
   if (!s) return;
   state.offset = s.serverNow - Date.now();
   el('thought').textContent = s.thought ?? 'Waiting for the mission.';
-  el('step').textContent = s.checkpointLabel ? `Checkpoint: ${s.checkpointLabel}` : '';
   el('live').classList.toggle('off', s.runMode === 'idle');
   if (s.vote) showVote(s.vote);
-  else showIdle(s.lastResult);
+  else showIdle(s);
   tick();
 }
 

@@ -36,7 +36,7 @@ const SECTIONS: Record<string, (r: Route) => SiteResponse> = {
   hotels: (r) => hotels(r),
   checkout: (r) => checkout(r.show, r.req, r.ctx),
   pay: (r) => (writable(r.req) ? pay(r.show, r.req, r.ctx) : ok(searchPage(r.ctx))),
-  done: (r) => ok(donePage(r.ctx, tripTotal(r.show), r.show.cart.insurance)),
+  done: (r) => ok(donePage(r.ctx, tripTotal(r.show), r.show.cart.insurance === true)),
 };
 
 function tripTotal(show: Show): number {
@@ -101,14 +101,15 @@ function checkoutLines(show: Show) {
   return { lines, total };
 }
 
+const INSURANCE_CHOICE: Record<string, boolean> = { yes: true, no: false };
+
 function checkout(show: Show, req: SiteRequest, ctx: PageContext): SiteResponse {
-  if (!req.mirror && show.site.darkPatterns) show.cart.insurance = req.query?.insurance !== 'no';
+  if (!req.mirror && show.site.darkPatterns) show.cart.insurance = INSURANCE_CHOICE[req.query?.insurance ?? ''] ?? show.cart.insurance ?? true;
   const { lines, total } = checkoutLines(show);
   return ok(checkoutPage(ctx, { lines, cart: show.cart, total }));
 }
 
 function pay(show: Show, req: SiteRequest, ctx: PageContext): SiteResponse {
-  if (show.site.darkPatterns) show.cart.insurance = req.form.insurance === 'yes';
   if (show.site.captcha !== 'solved') {
     show.site.captcha = 'pending';
     return { status: 428, html: messagePage(ctx, 'Human check required', 'Please complete the human check before paying.', '/site/checkout') };

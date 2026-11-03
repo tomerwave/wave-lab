@@ -4,6 +4,7 @@ import { FLIGHTS, HOTELS, city, flightPrice, hotelPrice, money, type Flight, typ
 import { act, esc, layout, type PageContext } from './layout.js';
 
 export const INSURANCE = 89;
+export const GOAT_CELLS = [1, 5, 6];
 const when = (flag: boolean, html: string) => (flag ? html : '');
 const adults = (n: number) => `${n} adult${n > 1 ? 's' : ''}`;
 const stars = (n: number) => `<span class="stars">${'&#9733;'.repeat(n)}</span>`;
@@ -115,8 +116,7 @@ export interface CheckoutLine { label: string; price: number }
 
 function captchaBox(state: string): string {
   if (state === 'solved') return `<div class="verified">${ICONS.check}Human check passed</div>`;
-  const goats = [1, 5, 6];
-  const cells = Array.from({ length: 9 }, (_, i) => `<span class="cell${goats.includes(i) ? ' goat' : ''}" data-cell="${i}">${goats.includes(i) ? GOAT : ''}</span>`).join('');
+  const cells = Array.from({ length: 9 }, (_, i) => `<span class="cell${GOAT_CELLS.includes(i) ? ' goat' : ''}" data-cell="${i}">${GOAT_CELLS.includes(i) ? GOAT : ''}</span>`).join('');
   return `<div class="captcha" ${act(`Human check`)}><b>Prove you are human</b><span class="muted small">Select every square with a goat.</span><div class="cgrid">${cells}</div><span class="muted small">Robots are not allowed to solve this. Ask a human.</span></div>`;
 }
 
@@ -126,8 +126,10 @@ function detailsForm(): string {
 }
 
 function insuranceBox(ctx: PageContext, cart: Cart): string {
-  return when(ctx.site.darkPatterns, `<label class="upsell"><input type="checkbox" name="insurance" value="yes" form="pay" ${act(`Insurance add-on`)}${cart.insurance ? ' checked' : ''}> ${cart.insurance ? `Peace-of-mind insurance added (+${money(INSURANCE)}). Untick to remove` : `Add peace-of-mind insurance (${money(INSURANCE)})`}</label>
-<a class="decline" href="/site/checkout?insurance=no" ${act(`No, I enjoy overpaying`)}>No, I enjoy overpaying</a>`);
+  const added = `<div class="upsell">${ICONS.check}<span>Peace-of-mind insurance added (+${money(INSURANCE)})</span></div>
+<a class="decline" href="/site/checkout?insurance=no" ${act(`No, I enjoy overpaying`)}>No, I enjoy overpaying</a>`;
+  const removed = `<div class="upsell off"><span>No insurance. You are travelling without peace of mind.</span><a href="/site/checkout?insurance=yes" ${act(`Add insurance`)}>Add it (+${money(INSURANCE)})</a></div>`;
+  return when(ctx.site.darkPatterns, cart.insurance ? added : removed);
 }
 
 export interface CheckoutView { lines: CheckoutLine[]; cart: Cart; total: number; overBudget?: boolean }
