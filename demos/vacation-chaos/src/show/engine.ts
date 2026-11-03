@@ -3,6 +3,7 @@ import { freshMission, freshSite, type Mission, type Pace, type RunMode, type Si
 
 export const VOTE_MS = 30_000;
 export const THINK_DELAY: Record<Pace, number> = { story: 2500, turbo: 0 };
+export const SITE_DELAY: Record<Pace, number> = { story: 600, turbo: 0 };
 
 export const CHECKPOINTS = [
   { label: 'Where?', kind: 'vote' }, { label: 'One rule', kind: 'vote' }, { label: 'Brief', kind: 'agent' },
@@ -20,6 +21,8 @@ export type VoteTarget = 'destination' | 'rule' | 'chaos';
 export interface ActiveVote { id: string; target: VoteTarget; question: string; options: VoteOption[]; tally: Record<string, number>; total: number; closesAt: number }
 export interface Booking { label: string; price: number }
 export interface Telemetry { toolCalls: number; inputTokens: number; outputTokens: number; latencyMs: number; model: string | null }
+export interface Haggle { hotelId: string; offer: number; accepted: boolean; reply: string }
+export interface Cart { insurance: boolean; haggle: Haggle | null }
 export interface ToolReply { mission: Mission; inbox: string[]; note?: string }
 
 export interface Snapshot {
@@ -27,7 +30,7 @@ export interface Snapshot {
   lastResult: { question: string; winner: string; total: number } | null;
   booked: { flight: Booking | null; hotel: Booking | null }; applied: string[]; route: string; lastClick: string | null;
   thought: string | null; pendingAsk: string | null; approvedOverspend: boolean; finished: string | null;
-  telemetry: Telemetry; events: ShowEvent[];
+  telemetry: Telemetry; cart: Cart; chaosVotes: number; events: ShowEvent[];
 }
 
 interface ShowOptions { now?: () => number; sleep?: (ms: number) => Promise<void>; random?: () => number }
@@ -64,6 +67,15 @@ export class Show {
   get site(): SiteMode { return this.state.site; }
   get mission(): Mission { return this.state.mission; }
   get clock(): number { return this.now(); }
+  get cart(): Cart { return this.state.cart; }
+  get chaosVotes(): number { return this.state.chaosVotes; }
+  get applied(): string[] { return this.state.applied; }
+  get booked(): Snapshot['booked'] { return this.state.booked; }
+  get approvedOverspend(): boolean { return this.state.approvedOverspend; }
+
+  sitePause(): Promise<void> {
+    return this.sleep(SITE_DELAY[this.state.pace]);
+  }
 
   onChange(fn: (s: Snapshot) => void): () => void {
     this.listeners.add(fn);
@@ -76,7 +88,8 @@ export class Show {
       runMode, pace, checkpoint: 0, mission: freshMission(), site: freshSite(), vote: null, lastResult: null,
       booked: { flight: null, hotel: null }, applied: [], route: '/site', lastClick: null, thought: null,
       pendingAsk: null, approvedOverspend: false, finished: null,
-      telemetry: { toolCalls: 0, inputTokens: 0, outputTokens: 0, latencyMs: 0, model: null }, events: [],
+      telemetry: { toolCalls: 0, inputTokens: 0, outputTokens: 0, latencyMs: 0, model: null },
+      cart: { insurance: false, haggle: null }, chaosVotes: 0, events: [],
     };
     this.voters.clear();
     this.inbox = [];
@@ -106,6 +119,7 @@ export class Show {
     };
     this.voters.clear();
     this.state.vote = vote;
+    if (target === 'chaos') this.state.chaosVotes += 1;
     if (target === 'chaos') this.checkpoint(CHAOS_CHECKPOINTS.find((i) => i > this.state.checkpoint) ?? 10);
     this.record('vote', { phase: 'open', target, options: options.map((o) => o.label) });
     return vote;
