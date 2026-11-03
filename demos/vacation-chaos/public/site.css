@@ -1,0 +1,64 @@
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%}
+body{font-family:system-ui,-apple-system,"Segoe UI",sans-serif;color:#1d2733;background:#f4f8fb;display:flex;flex-direction:column;overflow:hidden;font-size:14px}
+header{display:flex;align-items:center;gap:28px;padding:14px 28px;background:#fff;border-bottom:1px solid #e3e9ef}
+.brand{font-weight:800;font-size:22px;color:#0b5c8a;letter-spacing:-.03em;display:flex;flex-direction:column;line-height:1.1}
+.brand small{font-weight:400;font-size:11.5px;color:#7a8794;letter-spacing:0}
+.steps{display:flex;gap:6px;flex:1}
+.steps span{font-size:12px;padding:5px 11px;border-radius:99px;color:#7a8794;background:#f1f4f7}
+.steps span.on{background:#0b5c8a;color:#fff}
+.trip{font-size:12.5px;color:#4b5864;background:#eef5fa;border-radius:8px;padding:6px 12px}
+.news{background:#7a1d1d;color:#fff;font-size:13px;font-weight:600;padding:9px 28px;letter-spacing:.01em}
+main{flex:1;padding:22px 28px;min-height:0;overflow:hidden;max-width:1100px;width:100%;margin:0 auto}
+h1{font-size:24px;letter-spacing:-.02em;margin-bottom:16px}
+.row{display:grid;grid-template-columns:1fr 160px 110px;align-items:center;gap:16px;background:#fff;border:1px solid #e3e9ef;border-radius:12px;padding:14px 18px;margin-bottom:10px}
+.row.off{opacity:.55}
+.price{text-align:right}
+.price small{display:block;color:#b00020;font-size:11px}
+.price strong{display:block;font-size:20px;letter-spacing:-.02em}
+.muted{color:#6b7783;font-size:12.5px}
+.feat{font-size:12px;color:#0b5c8a}
+.tag{display:inline-block;font-size:10.5px;padding:2px 7px;border-radius:5px;background:#f1f4f7;color:#4b5864;text-transform:uppercase;letter-spacing:.05em}
+.tag.bad{background:#fde8e8;color:#b00020}
+.tag.ok{background:#e5f4ea;color:#1d6b3a}
+.warn{display:block;font-style:normal;font-size:11.5px;color:#b00020;font-weight:600}
+.btn{display:inline-block;background:#0b5c8a;color:#fff;border:0;border-radius:9px;padding:10px 16px;font:inherit;font-weight:600;text-decoration:none;cursor:pointer;text-align:center}
+.search{display:grid;grid-template-columns:repeat(4,1fr) auto;gap:12px;align-items:end;background:#fff;border:1px solid #e3e9ef;border-radius:14px;padding:18px;margin-bottom:14px}
+.search label{display:flex;flex-direction:column;font-size:11.5px;color:#6b7783;gap:4px}
+.search input,.haggle input{font:inherit;font-size:15px;padding:9px 10px;border:1px solid #d6dee6;border-radius:8px;color:#1d2733}
+.detail{background:#fff;border:1px solid #e3e9ef;border-radius:14px;padding:18px 20px;display:flex;flex-direction:column;gap:12px;align-items:flex-start}
+.detail.two{display:grid;grid-template-columns:1.4fr 1fr;gap:28px;align-items:start}
+.detail.two > div{display:flex;flex-direction:column;gap:10px}
+blockquote{font-size:13px;border-left:3px solid #e3e9ef;padding-left:10px}
+blockquote cite{display:block;font-style:normal;color:#6b7783;font-size:11.5px}
+details summary{font-weight:600;font-size:13px;cursor:pointer}
+.terms{font-size:12px;color:#4b5864;margin-top:4px}
+.hidden-note{font-size:10px;color:#eef2f5}
+.haggle{background:#eef5fa;border-radius:12px;padding:12px;display:flex;flex-direction:column;gap:8px;width:100%}
+.haggle form{display:flex;gap:8px}
+.bot{font-size:13px}
+.bot::before{content:"Sunny, sales assistant: ";font-weight:700;color:#0b5c8a}
+.line{display:flex;justify-content:space-between;gap:20px;padding:7px 0;border-bottom:1px solid #eef2f5;width:100%}
+.line.total{font-size:17px}
+.dark{display:block;font-size:13px;background:#fff7e6;border:1px solid #ffd27a;padding:8px 10px;border-radius:8px;margin-top:8px}
+.decline{font-size:11px;color:#9aa5b0}
+.captcha{border:1px solid #d6dee6;border-radius:12px;padding:12px;background:#fafcfe;width:100%}
+.captcha .grid{display:grid;grid-template-columns:repeat(3,58px);gap:5px;margin:8px 0}
+.cell{width:58px;height:46px;border-radius:6px;background:#dfe8ef;display:flex;align-items:center;justify-content:center;font-size:11px;color:#4b5864}
+.cell.goat{background:#cfe3c9}
+.outage{background:#fff;border:1px solid #e3e9ef;border-radius:14px;padding:34px;display:flex;flex-direction:column;gap:12px;align-items:flex-start}
+.outage .big{font-size:26px;font-weight:700;letter-spacing:-.02em}
+footer{display:flex;justify-content:space-between;padding:8px 28px;font-size:11px;color:#9aa5b0;border-top:1px solid #e3e9ef;background:#fff}
+.duck{position:fixed;bottom:34px;left:-40px;width:30px;height:22px;animation:waddle 38s linear infinite}
+@keyframes waddle{0%{left:-40px;transform:scaleX(1)}48%{left:calc(100% + 10px);transform:scaleX(1)}50%{left:calc(100% + 10px);transform:scaleX(-1)}98%{left:-40px;transform:scaleX(-1)}100%{left:-40px;transform:scaleX(1)}}
+
+body.skin-takeover{background:#f6f1e4;font-family:Georgia,"Times New Roman",serif}
+.skin-takeover header{background:#0f5132;border-bottom:6px double #c8102e}
+.skin-takeover .brand{color:#fff}
+.skin-takeover .brand small,.skin-takeover .trip{color:#f6f1e4;background:transparent}
+.skin-takeover .steps span{background:#1c6b47;color:#e8f1ec}
+.skin-takeover .steps span.on{background:#c8102e}
+.skin-takeover main{border-left:8px solid #0f5132;border-right:8px solid #c8102e}
+.skin-takeover .row,.skin-takeover .detail,.skin-takeover .outage,.skin-takeover .search{border:2px solid #0f5132;border-radius:0}
+.skin-takeover .btn{background:#c8102e;border-radius:0}
+.skin-takeover h1::after{content:" · all roads lead to Tehran";font-size:14px;color:#0f5132;font-style:italic}

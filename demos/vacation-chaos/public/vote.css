@@ -1,0 +1,9 @@
+body{min-height:100vh;display:flex;justify-content:center}
+main{width:100%;max-width:480px;padding:28px 18px}
+h1{font-size:1.75rem;margin:10px 0 6px;line-height:1.15}
+.sub{color:var(--ink-70);font-size:.95rem;margin-bottom:18px}
+#options{display:flex;flex-direction:column;gap:10px}
+button{font:inherit;font-size:1.05rem;text-align:left;padding:16px 16px;border:1px solid var(--hair);background:var(--paper);color:var(--ink);cursor:pointer;display:flex;justify-content:space-between;align-items:center;gap:12px}
+button.on{background:var(--paper-warm);border-color:var(--sage-deep);box-shadow:inset 3px 0 0 var(--sage-deep)}
+button small{color:var(--ink-45);font-size:.8rem}
+#status{margin-top:16px}

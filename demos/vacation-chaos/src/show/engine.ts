@@ -253,7 +253,8 @@ export class Show {
   }
 
   private pickChaos(): string[] {
-    const pool = CHAOS_POOL.filter((id) => !this.state.applied.includes(id));
+    const flightBooked = this.state.booked.flight !== null;
+    const pool = CHAOS_POOL.filter((id) => !this.state.applied.includes(id) && !(flightBooked && TWISTS[id]!.flightOnly));
     const picked: string[] = [];
     while (picked.length < 3 && pool.length) picked.push(pool.splice(Math.floor(this.random() * pool.length), 1)[0]!);
     return picked;

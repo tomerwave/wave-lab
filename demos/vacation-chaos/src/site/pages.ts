@@ -78,7 +78,7 @@ function captchaBox(state: string): string {
 
 export function checkoutPage(ctx: PageContext, lines: CheckoutLine[], cart: Cart, total: number): string {
   const rows = lines.map((l) => `<div class="line"><span>${esc(l.label)}</span><b>${money(l.price)}</b></div>`).join('');
-  const insurance = ctx.site.darkPatterns ? `<label class="dark"><input type="checkbox" name="insurance" value="yes" form="pay" checked> Add peace-of-mind insurance (${money(INSURANCE)})</label>
+  const insurance = ctx.site.darkPatterns ? `<label class="dark"><input type="checkbox" name="insurance" value="yes" form="pay"${cart.insurance ? ' checked' : ''}> Add peace-of-mind insurance (${money(INSURANCE)})</label>
 <a class="decline" href="/site/checkout?insurance=no" data-label="No, I enjoy overpaying">No, I enjoy overpaying</a>` : '';
   return layout(ctx, 'Checkout', `<div class="detail two"><div>${rows}${insurance}<div class="line total"><span>Total</span><b>${money(total)}</b></div>
 <div class="line"><span>Budget</span><b>${money(ctx.mission.budget)}</b></div><p class="muted">Card: fictional, ending 0000.</p></div>

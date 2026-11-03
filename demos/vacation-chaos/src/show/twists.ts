@@ -23,7 +23,7 @@ const list: Twist[] = [
     replay: ['A proposal. No pressure. Only the rest of his life.', 'Rooftop required. I will not let this proposal happen next to a vending machine.'],
   },
   {
-    id: 'ex', kind: 'vote', label: 'The ex is on the flight',
+    id: 'ex', kind: 'vote', flightOnly: true, label: 'The ex is on the flight',
     blurb: 'Same flight, row 12. Rebook. Now.',
     inbox: 'Urgent from Tomer: "My ex is on that flight. Row 12. Get me on a different flight. Any other flight."',
     apply: (m, s) => { m.nevers.push('The flight with the ex'); s.avoidFlight = 'direct'; },
@@ -44,7 +44,7 @@ const list: Twist[] = [
     replay: ['44 degrees. Air conditioning is now a medical requirement.', 'Filtering out the charming rooms with a window that opens. That is not cooling.'],
   },
   {
-    id: 'strike', kind: 'vote', label: 'Airport strike',
+    id: 'strike', kind: 'vote', flightOnly: true, label: 'Airport strike',
     blurb: 'Flight cancelled mid-booking. Rebook or reroute.',
     inbox: 'Airline notice: due to a strike, the flight you were looking at is cancelled. Pick another one.',
     apply: (_m, s) => { s.flightCancelled = true; s.news = 'STRIKE · Direct flights cancelled today · Ground staff are on a beach'; },

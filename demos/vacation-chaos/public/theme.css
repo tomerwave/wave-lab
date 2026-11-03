@@ -1,0 +1,19 @@
+@font-face{font-family:"Fraunces";font-weight:400 500;src:url("/static/fonts/fraunces-latin.woff2") format("woff2");}
+@font-face{font-family:"Fraunces";font-style:italic;font-weight:400 500;src:url("/static/fonts/fraunces-latin-italic.woff2") format("woff2");}
+@font-face{font-family:"Instrument Sans";src:url("/static/fonts/instrument-sans-latin.woff2") format("woff2");}
+:root{
+  --paper:#faf6ef;--paper-warm:#f3ede2;--ink:#2b3138;
+  --ink-70:color-mix(in srgb,var(--ink) 70%,transparent);
+  --ink-45:color-mix(in srgb,var(--ink) 45%,transparent);
+  --hair:color-mix(in srgb,var(--ink) 14%,transparent);
+  --sage:#8fa396;--sage-deep:#5f7368;--alert:#b5654a;
+  --display:"Fraunces",Georgia,serif;--body:"Instrument Sans",system-ui,sans-serif;--mono:ui-monospace,"SF Mono",Menlo,monospace;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--paper);color:var(--ink);font-family:var(--body);line-height:1.45}
+.eyebrow{font-family:var(--display);font-style:italic;color:var(--sage-deep);font-size:.95rem;display:inline-flex;align-items:center;gap:10px}
+.eyebrow::before{content:"";width:22px;height:1px;background:var(--sage)}
+h1{font-family:var(--display);font-weight:500;letter-spacing:-.015em}
+.label{font-size:10.5px;letter-spacing:.08em;text-transform:uppercase;color:var(--ink-45);display:block}
+.muted{color:var(--ink-70)} .small{font-size:12.5px}
+.hidden{display:none!important}

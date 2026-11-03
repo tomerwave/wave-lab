@@ -1,5 +1,13 @@
 import { loadConfig } from './config.js';
 import { writeLine } from './output.js';
+import { createShowServer } from './server.js';
+import { Show } from './show/engine.js';
 
 const config = loadConfig();
-writeLine(`Vacation Chaos on ${config.publicUrl}`);
+const show = new Show();
+createShowServer(show, config).listen(config.port, () => {
+  writeLine(`Mission Control  ${config.publicUrl}/control`);
+  writeLine(`Phone vote       ${config.publicUrl}/vote`);
+  writeLine(`MCP tools        ${config.publicUrl}/mcp/${config.presenterKey}`);
+  writeLine(`Presenter key    ${config.presenterKey}  (press P in Mission Control)`);
+});

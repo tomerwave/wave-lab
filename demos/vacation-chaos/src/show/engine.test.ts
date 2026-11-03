@@ -112,3 +112,14 @@ test('checkpoints only move forward and reset clears the run', () => {
   assert.equal(h.show.snapshot().checkpoint, 0);
   assert.equal(h.show.snapshot().runMode, 'replay');
 });
+
+test('flight-only twists leave the pool once a flight is booked', () => {
+  const h = harness();
+  finishOpening(h);
+  h.show.book('flight', 'LY 375', 640);
+  for (let i = 0; i < 4; i++) {
+    const vote = h.show.openVote('chaos');
+    assert.ok(!vote.options.some((o) => o.id === 'strike' || o.id === 'ex'));
+    h.show.closeVote();
+  }
+});
