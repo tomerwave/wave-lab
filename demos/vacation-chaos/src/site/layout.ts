@@ -1,13 +1,13 @@
 import type { Mission, SiteMode } from '../show/types.js';
 import { DUCK, ICONS, IRAN_FLAG, SEAL, SUN_MARK } from './art.js';
-import { city } from './inventory.js';
+import { city, money } from './inventory.js';
 
 export const esc = (value: unknown) =>
   String(value).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]!);
 
 export const slug = (label: string) => label.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
 
-export const act = (label: string) => `id="${slug(label)}" data-label="${esc(label)}"`;
+export const act = (label: string) => `id="${slug(label)}" data-label="${esc(label)}" aria-label="${esc(label)}"`;
 
 export interface PageContext { mission: Mission; site: SiteMode; mirror: boolean; step: 'search' | 'flights' | 'hotels' | 'checkout' | 'done' }
 
@@ -33,15 +33,19 @@ function band(ctx: PageContext, lead: string): string {
   return `<section class="band${ctx.step === 'search' ? ' tall' : ''}"><div class="wrap"><p class="bandlead">${lead}</p>${searchBar(ctx)}</div></section>`;
 }
 
+function account(ctx: PageContext): string {
+  return `<span class="navlink">Trip budget <b>${money(ctx.mission.budget)}</b></span><span class="user"><i>T</i>Tomer</span>`;
+}
+
 function normalHeader(ctx: PageContext): string {
   return `<header class="top"><div class="wrap toprow"><a class="logo" href="/site" ${act(`Home`)}>${SUN_MARK}<span>SunnyHop</span></a><nav class="tabs">${tabs(ctx)}</nav>
-<div class="navright"><span class="navlink">${ICONS.globe}EN · USD</span><span class="navlink">Help</span><span class="navlink">Trips</span><span class="user"><i>T</i>Tomer</span></div></div></header>
+<div class="navright"><span class="navlink">${ICONS.globe}EN · USD</span><span class="navlink">Help</span><span class="navlink">Trips</span>${account(ctx)}</div></div></header>
 ${band(ctx, 'Flights and stays, compared in one place. Prices include taxes.')}`;
 }
 
 function takeoverHeader(ctx: PageContext): string {
   return `<div class="tricolor"></div><header class="top"><div class="wrap toprow">${IRAN_FLAG}<a class="logo" href="/site" ${act(`Home`)}><span>PersiaHop</span><small>Under new management · formerly <s>SunnyHop</s></small></a><nav class="tabs">${tabs(ctx)}</nav>
-<div class="navright"><span class="navlink">Official travel portal</span><span class="navlink struck">Complaints</span><span class="pill">Log in</span></div></div></header>
+<div class="navright"><span class="navlink">Official travel portal</span><span class="navlink struck">Complaints</span>${account(ctx)}</div></div></header>
 <div class="decree"><div class="wrap decreerow">${SEAL}<p><b>Decree No. 1.</b> By order of the new owners, all destinations have been simplified. Please enjoy your trip to Tehran.</p><span class="decree-sign">The Management</span></div></div>
 ${band(ctx, 'One destination. Zero decisions. Maximum hospitality.')}`;
 }

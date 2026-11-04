@@ -55,7 +55,8 @@ function tick() {
   const v = state.vote;
   if (!v) return;
   const left = Math.max(0, v.closesAt - (Date.now() + state.offset));
-  el('timer').textContent = `0:${String(Math.ceil(left / 1000)).padStart(2, '0')}`;
+  const seconds = Math.ceil(left / 1000);
+  el('timer').textContent = `${Math.floor(seconds / 60)}:${String(seconds % 60).padStart(2, '0')}`;
   el('timebar').style.width = `${Math.min(100, (left / (v.closesAt - v.opensAt)) * 100)}%`;
 }
 

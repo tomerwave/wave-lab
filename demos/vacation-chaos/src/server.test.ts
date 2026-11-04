@@ -1,6 +1,8 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
+import type { TourStop } from './tour.js';
 import type { AddressInfo } from 'node:net';
+import { CONTACT } from './contact.js';
 import { Show } from './show/engine.js';
 import { createShowServer } from './server.js';
 
@@ -64,7 +66,10 @@ test('site routes render and redirect through the server', async (t) => {
 test('vote page hands out a voter cookie', async (t) => {
   const { base, close } = await boot();
   t.after(close);
-  assert.match((await fetch(`${base}/vote`)).headers.get('set-cookie') ?? '', /^vc_voter=/);
+  const page = await fetch(`${base}/vote`);
+  assert.match(page.headers.get('set-cookie') ?? '', /^vc_voter=/);
+  const html = await page.text();
+  for (const { href } of CONTACT) assert.ok(html.includes(`href="${href}"`), href);
 });
 
 async function agentSearch(base: string, token: string): Promise<string> {
@@ -111,10 +116,16 @@ test('every scenario sets up and its page renders', async (t) => {
 test('the code tour serves real excerpts from the files it names', async (t) => {
   const { base, close } = await boot();
   t.after(close);
-  const tour = await (await fetch(`${base}/api/tour`)).json() as Array<{ title: string; file: string; start: number; code: string }>;
+  const tour = await (await fetch(`${base}/api/tour`)).json() as TourStop[];
   assert.ok(tour.length >= 8);
   const harness = tour.find((s) => s.title === 'The agent is configuration')!;
   assert.match(harness.code, /^def harness_config/);
   assert.ok(harness.start > 1);
+  assert.ok(harness.tokens[0]!.some((token) => token.color !== harness.tokens[0]![0]!.color), 'the code is coloured');
+  const tools = tour.find((s) => s.title === 'The tools the agent can call')!;
+  assert.match(tools.code, /^server\.registerTool\(\n?\s*'think_aloud'/);
+  const site = tour.find((s) => s.title === 'A site built for agents')!.views!;
+  assert.ok(site[2]!.bytes < site[0]!.bytes / 2, 'the agent reads far less than the raw HTML');
+  assert.match(site[1]!.text, /button "Select LY 375"|link "Select LY 375"/);
   assert.equal((await fetch(`${base}/tour`)).status, 200);
 });

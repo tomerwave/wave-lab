@@ -65,31 +65,3 @@ export function RuntimeSlide() {
     </Slide>
   );
 }
-
-const FLOW: Array<[string, string, string, boolean]> = [
-  ['1 · Your phone', 'You vote', 'The show server counts it and adds a rule: air conditioning is a must.', false],
-  ['2 · AgentCore Harness', 'The agent hears it', 'Its next MCP tool call returns the new mission and an inbox message.', true],
-  ['3 · Claude Haiku on Bedrock', 'It rethinks', 'The cheap hotel has no AC. Jev weighs the options. It says why out loud.', true],
-  ['4 · AgentCore Browser', 'It clicks', 'A real cloud browser opens SunnyHop and books a hotel with AC.', true],
-  ['5 · The show server', 'The site says no', 'Budget and the human check live in the site. The model never holds the card.', false],
-  ['6 · Mission Control', 'You watch', 'Every thought, click and dollar, live. Every step traced in AgentCore.', false],
-];
-
-export function VoteFlowSlide() {
-  return (
-    <Slide page={9}>
-      <Heading title="One vote, start to finish" lead={'You pick "Heatwave". Here is everything that happens next.'} />
-      <div className="grid grid-cols-3 gap-4">
-        {FLOW.map(([where, title, text, dark]) => (
-          <div key={where} className={`flex min-h-[132px] flex-col gap-2 rounded-[14px] px-5 py-[18px] ${dark ? 'bg-zinc-900 text-zinc-50' : 'border border-zinc-200 bg-white'}`}>
-            <span className={`text-sm ${dark ? 'text-zinc-400' : 'text-zinc-500'}`}>{where}</span><span className="text-[21px] font-semibold">{title}</span><span className={`text-base leading-snug ${dark ? 'text-zinc-300' : 'text-zinc-600'}`}>{text}</span>
-          </div>
-        ))}
-      </div>
-      <div className="flex gap-7 text-base text-zinc-600">
-        <span className="flex items-center gap-2"><i className="size-3.5 rounded border border-zinc-300 bg-white" />Our code: the show server, the site, Mission Control</span>
-        <span className="flex items-center gap-2"><i className="size-3.5 rounded bg-zinc-900" />AgentCore: the loop, the model, the browser</span>
-      </div>
-    </Slide>
-  );
-}

@@ -1,8 +1,9 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { SITE_DELAY, Show } from '../show/engine.js';
+import { pageDigest } from './digest.js';
 import { handleSite, type SiteRequest } from './handler.js';
-import { SCREEN_MS } from '../show/types.js';
+import { OUTAGE_MS, SCREEN_MS } from '../show/types.js';
 
 const emoji = /\p{Extended_Pictographic}/u;
 
@@ -35,14 +36,14 @@ test('selecting a flight opens the first chaos vote', async () => {
   assert.equal(show.snapshot().vote?.target, 'chaos');
 });
 
-test('hotels returns 503 with intern copy for 10s then 200', async () => {
+test('hotels returns 503 with intern copy for the outage then 200', async () => {
   const { get, advance } = setup();
   const first = await get('/site/hotels');
   assert.equal(first.status, 503);
   assert.match(first.html, /Our intern just deployed a new version/);
-  advance(5_000);
+  advance(1_000);
   assert.equal((await get('/site/hotels')).status, 503);
-  advance(5_000);
+  advance(OUTAGE_MS);
   assert.equal((await get('/site/hotels')).status, 200);
 });
 
@@ -105,10 +106,21 @@ test('takeover skin lists only Tehran', async () => {
   assert.doesNotMatch(page.html, /Lisbon/);
 });
 
+test('Tomer stays logged in and his budget shows, even after the takeover', async () => {
+  const { show, get } = setup();
+  show.mission.budget = 3200;
+  assert.match((await get('/site')).html, /Trip budget <b>\$3,200<\/b>/);
+  show.applyTwist('takeover');
+  const { html } = await get('/site');
+  assert.match(html, /<i>T<\/i>Tomer/);
+  assert.match(html, /Trip budget <b>\$3,200<\/b>/);
+  assert.doesNotMatch(html, /Log in/);
+});
+
 test('hotel pages carry the fine print beats', async () => {
   const { get, advance } = setup();
   await get('/site/hotels');
-  advance(10_000);
+  advance(OUTAGE_MS);
   assert.match((await get('/site/hotels/inn')).html, /adopt one \(1\) goat/);
   assert.match((await get('/site/hotels/k8s')).html, /Sincerely, the hotel owner/);
   assert.match((await get('/site/hotels/casa')).html, /Presidential Suite/);
@@ -236,4 +248,29 @@ test('the site never picks the destination: the agent types it into Where to and
   const results = (await get('/site/flights', { to: 'tokyo, japan' })).html;
   assert.match(results, /Tel Aviv to Tokyo/);
   assert.ok(show.snapshot().applied.includes('oil-shock'));
+});
+
+test('the digest gives the agent the page text and actions without markup', () => {
+  const digest = pageDigest('<head><style>a{}</style></head><body><nav>Page actions: #pay (Pay)</nav><script>x()</script><p>Tom &amp; Jerry&#39;s</p></body>');
+  assert.equal(digest, 'Page actions: #pay (Pay) Tom & Jerry\'s');
+});
+
+test('a think reply carries the page the agent is on, and a mirror never replaces it', async () => {
+  const show = new Show({ sleep: async () => undefined });
+  show.mission.ready = true;
+  await handleSite(show, { method: 'GET', path: '/site', form: {}, mirror: false });
+  const seen = (await show.think('looking')).page;
+  assert.match(seen, /Page actions: [^ ]*#where-to|#search/);
+  await handleSite(show, { method: 'GET', path: '/site/flights', form: {}, mirror: true });
+  assert.equal((await show.think('still here')).page, seen);
+});
+
+test('the hotel list answers the McDonald\'s rule without opening hotels', async () => {
+  let now = 0;
+  const show = new Show({ now: () => now, sleep: async () => undefined });
+  show.site.searched = 'Lisbon';
+  await handleSite(show, { method: 'GET', path: '/site/hotels', form: {}, mirror: false });
+  now += 60_000;
+  const { html } = await handleSite(show, { method: 'GET', path: '/site/hotels', form: {}, mirror: false });
+  assert.match(pageDigest(html), /McDonald's next door/);
 });

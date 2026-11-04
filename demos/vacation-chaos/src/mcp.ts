@@ -43,7 +43,7 @@ function registerDecide(server: McpServer, show: Show, decider: Decider): void {
 export function buildMcpServer(show: Show, decider?: Decider): McpServer {
   const server = new McpServer({ name: 'vacation-chaos-show', version: '1.0.0' });
   server.registerTool('think_aloud', {
-    description: 'Say what you are about to do and why, in one or two short sentences the audience will read. Call this before every browser action. Returns the current mission and any new messages.',
+    description: 'Say what you are about to do and why, in one or two short sentences the audience will read. Call this once per page, after the page loads. Returns the current mission, any new messages and page: the text of the page you are on with its Page actions.',
     inputSchema: { thought: z.string().min(1).max(400) },
   }, async ({ thought }) => asText(await show.think(thought)));
   server.registerTool('check_inbox', {

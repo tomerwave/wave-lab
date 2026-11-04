@@ -111,8 +111,8 @@ const list: Twist[] = [
   },
   {
     id: 'intern-deploy', kind: 'auto', label: 'Intern deploy',
-    blurb: 'Our intern just deployed a new version. Back in 10 seconds.',
-    look: 'status', kicker: 'SunnyHop status · Major outage', headline: 'Our intern just deployed to production. On a Friday.', effect: 'The site is down for 10 seconds. Probably.', sticker: 'WORKS ON MY MACHINE',
+    blurb: `Our intern just deployed a new version. Back in ${OUTAGE_MS / 1000} seconds.`,
+    look: 'status', kicker: 'SunnyHop status · Major outage', headline: 'Our intern just deployed to production. On a Friday.', effect: `The site is down for ${OUTAGE_MS / 1000} seconds. Probably.`, sticker: 'WORKS ON MY MACHINE',
     lines: ['17:02 intern: small CSS fix', '17:02 every server: on fire', '17:03 CTO is typing...', '17:03 intern: it works on my machine'],
     inbox: 'Status: SunnyHop is deploying a new version.',
     apply: (_m, s, now) => { s.outageUntil = now + OUTAGE_MS; },
