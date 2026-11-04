@@ -24,14 +24,14 @@ export const HOTELS: Hotel[] = [
   {
     id: 'atrium', name: 'The Atrium Suites', perNight: 120, tagline: 'Apartment-style suites in the heart of the city.',
     stars: 3, score: 8.1, scoreLabel: 'Very good', reviewCount: 964, area: 'City centre · 0.3 km from centre',
-    features: ['Free cancellation', 'Kitchenette', 'Air conditioning'],
+    features: ['Free cancellation', 'Kitchenette', 'Air conditioning', 'McDonald\'s next door'],
     reviews: [{ author: 'Lior', stars: 4, text: 'Perfect location, clean and quiet at night.' }],
     terms: 'Standard terms. Check-in from 15:00.',
   },
   {
     id: 'quarter', name: 'Old Quarter Boutique Rooms', perNight: 95, tagline: 'A restored townhouse with twelve rooms.',
     stars: 3, score: 8.6, scoreLabel: 'Fabulous', reviewCount: 1102, area: 'Old Town · 0.8 km from centre',
-    features: ['Free cancellation', 'Free Wi-Fi', 'Rooftop bar'],
+    features: ['Free cancellation', 'Free Wi-Fi', 'Rooftop bar', 'McDonald\'s 200 m away'],
     reviews: [{ author: 'Sofia', stars: 5, text: 'Charming, friendly hosts, walking distance to everything.' }],
     terms: 'Standard terms. No elevator.',
   },

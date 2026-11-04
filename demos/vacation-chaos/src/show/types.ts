@@ -61,8 +61,8 @@ export interface VoteOption {
 }
 
 export const START_BUDGET = 2400;
-export const SCREEN_MS = { result: 6000, twist: 8000, booking: 4000, rest: 3000 };
-export const OUTAGE_MS = 10_000;
+export const SCREEN_MS = { result: 3500, twist: 5000, booking: 2000, rest: 800 };
+export const OUTAGE_MS = 5_000;
 
 export function freshMission(budget = START_BUDGET): Mission {
   return { ready: false, travellers: ['Tomer'], partySize: 1, destination: null, rule: null, budget, nights: 5, musts: [], nevers: [], persona: null };

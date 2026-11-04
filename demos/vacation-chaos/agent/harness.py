@@ -192,7 +192,11 @@ def invoke(settings: config.Settings, model: str | None) -> None:
     say(f"Session {session}")
     report_run(settings, session)
     response = data.invoke_harness(
-        harnessArn=harness_arn(settings), runtimeSessionId=session, actorId=ACTOR, tools=run_tools(settings), allowedTools=ALLOWED_TOOLS,
+        harnessArn=harness_arn(settings),
+        runtimeSessionId=session,
+        actorId=ACTOR,
+        tools=run_tools(settings),
+        allowedTools=ALLOWED_TOOLS,
         messages=[{"role": "user", "content": [{"text": settings.start_message}]}],
         **extra,
     )

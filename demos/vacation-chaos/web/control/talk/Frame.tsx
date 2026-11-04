@@ -2,7 +2,7 @@ import { useEffect, useState, type ReactNode } from 'react';
 
 export const SLIDE_W = 1280;
 export const SLIDE_H = 720;
-export const TOTAL = 9;
+export const TOTAL = 8;
 
 function useFit(): number {
   const fit = () => Math.min(window.innerWidth / SLIDE_W, window.innerHeight / SLIDE_H);

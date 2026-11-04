@@ -15,7 +15,7 @@ def presenter(settings: config.Settings, action: str, body: dict) -> dict:
     return call(settings, f"/api/presenter/{action}", body)
 
 
-TALK_SLIDES = 9
+TALK_SLIDES = 8
 
 
 def kind(path: str) -> str:

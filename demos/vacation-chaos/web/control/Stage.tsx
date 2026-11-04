@@ -29,7 +29,7 @@ function BudgetPicker({ budget }: { budget: number }) {
   );
 }
 
-const BACK_TO_SLIDES = '/talk?slide=9';
+const BACK_TO_SLIDES = '/talk?slide=8';
 
 function useBackToSlides(): void {
   useEffect(() => {

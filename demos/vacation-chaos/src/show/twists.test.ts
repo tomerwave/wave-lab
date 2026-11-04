@@ -1,7 +1,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { TWISTS, CHAOS_POOL, DESTINATIONS, RULES } from './twists.js';
-import { freshMission, freshSite } from './types.js';
+import { OUTAGE_MS, freshMission, freshSite } from './types.js';
 
 const emoji = /\p{Extended_Pictographic}/u;
 
@@ -36,8 +36,8 @@ test('oil-shock sets news and the boss sets nights to 2', () => {
   assert.equal(mission.nights, 2);
 });
 
-test('intern deploy opens a 10 second outage', () => {
+test('intern deploy opens a short outage', () => {
   const site = freshSite();
   TWISTS['intern-deploy']!.apply(freshMission(), site, 1000);
-  assert.equal(site.outageUntil, 11000);
+  assert.equal(site.outageUntil, 1000 + OUTAGE_MS);
 });

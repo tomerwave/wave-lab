@@ -3,9 +3,9 @@ import { useShow } from '../show';
 import { AgentSlide, HarnessSlide, OptionsSlide } from './Concepts';
 import { Stage } from './Frame';
 import { PlanSlide, TitleSlide, WhoSlide } from './Opening';
-import { ConfigSlide, RuntimeSlide, VoteFlowSlide } from './Platform';
+import { ConfigSlide, RuntimeSlide } from './Platform';
 
-const SLIDES: Array<(props: { audience: number }) => ReactNode> = [TitleSlide, WhoSlide, PlanSlide, AgentSlide, HarnessSlide, OptionsSlide, ConfigSlide, RuntimeSlide, VoteFlowSlide];
+const SLIDES: Array<(props: { audience: number }) => ReactNode> = [TitleSlide, WhoSlide, PlanSlide, AgentSlide, HarnessSlide, OptionsSlide, ConfigSlide, RuntimeSlide];
 const FORWARD = new Set(['ArrowRight', 'ArrowDown', 'PageDown', ' ']);
 const BACK = new Set(['ArrowLeft', 'ArrowUp', 'PageUp']);
 

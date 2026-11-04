@@ -3,10 +3,10 @@ import { freshRecap, track, type Recap, type RunInfo } from './recap.js';
 import { CHAOS_POOL, DESTINATIONS, RULES, TWISTS } from './twists.js';
 import { SCREEN_MS, START_BUDGET, freshMission, freshSite, type Ask, type AskKind, type Mission, type Pace, type RunMode, type SiteMode, type VoteOption } from './types.js';
 
-export const VOTE_MS = 30_000;
+export const VOTE_MS = 60_000;
 export const HEADS_UP_MS = 6_000;
-export const THINK_DELAY: Record<Pace, number> = { story: 2500, turbo: 0 };
-export const SITE_DELAY: Record<Pace, number> = { story: 600, turbo: 0 };
+export const THINK_DELAY: Record<Pace, number> = { story: 500, turbo: 0 };
+export const SITE_DELAY: Record<Pace, number> = { story: 150, turbo: 0 };
 
 
 export type EventType = 'thought' | 'step' | 'page' | 'click' | 'booking' | 'twist' | 'vote' | 'ask' | 'answer' | 'finish' | 'stopped' | 'pause' | 'telemetry' | 'reset';
@@ -17,7 +17,7 @@ export interface Booking { label: string; price: number; ref?: string }
 export interface Telemetry { toolCalls: number; inputTokens: number; outputTokens: number; latencyMs: number; model: string | null }
 export interface Haggle { hotelId: string; offer: number; accepted: boolean; reply: string }
 export interface Cart { insurance: boolean | null; haggle: Haggle | null }
-export interface ToolReply { mission: Mission; inbox: string[]; progress: { booked: Snapshot['booked']; lastPage: string } }
+export interface ToolReply { mission: Mission; inbox: string[]; progress: { booked: Snapshot['booked']; lastPage: string }; page: string }
 
 export interface Snapshot {
   runMode: RunMode; pace: Pace; pausedAt: number | null; mission: Mission; site: SiteMode; vote: ActiveVote | null;
@@ -51,6 +51,7 @@ export class Show {
   private token: string | null = null;
   private seq = 0;
   private holdUntil = 0;
+  private pageText = '';
   lastWinners: string[] = [];
 
   constructor(opts: ShowOptions = {}) {
@@ -72,6 +73,8 @@ export class Show {
   get applied(): string[] { return this.state.applied; }
   get booked(): Snapshot['booked'] { return this.state.booked; }
   get approvedOverspend(): boolean { return this.state.approvedOverspend; }
+
+  sawPage(text: string): void { this.pageText = text; }
 
   sitePause(): Promise<void> {
     return this.sleep(SITE_DELAY[this.state.pace]);
@@ -96,6 +99,7 @@ export class Show {
     this.autoVotesOn = true;
     this.token = null;
     this.holdUntil = 0;
+    this.pageText = '';
     this.endRun();
     this.record('reset', { runMode });
   }
@@ -315,7 +319,7 @@ export class Show {
     await this.waitUntilFree();
     await this.sleep(delayMs);
     const inbox = this.inbox.splice(0);
-    return { mission: structuredClone(this.state.mission), inbox, progress: { booked: structuredClone(this.state.booked), lastPage: this.state.route } };
+    return { mission: structuredClone(this.state.mission), inbox, progress: { booked: structuredClone(this.state.booked), lastPage: this.state.route }, page: this.pageText };
   }
 
   private optionsFor(target: VoteTarget, optionIds?: string[]): VoteOption[] {

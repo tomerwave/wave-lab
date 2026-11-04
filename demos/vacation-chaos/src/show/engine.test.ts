@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { HEADS_UP_MS, Show, VOTE_MS } from './engine.js';
+import { HEADS_UP_MS, Show, THINK_DELAY, VOTE_MS } from './engine.js';
 import { SCREEN_MS } from './types.js';
 
 const WHOLE_VOTE = HEADS_UP_MS + VOTE_MS;
@@ -38,7 +38,7 @@ test('closeVote with no votes picks the first option', () => {
   assert.equal(show.snapshot().mission.destination, 'Lisbon');
 });
 
-test('votes close by themselves after 30 seconds and the rule vote follows', () => {
+test('votes close by themselves after a minute and the rule vote follows', () => {
   const h = harness();
   h.show.beginOpening();
   h.show.castVote('a', 'Tokyo');
@@ -77,14 +77,14 @@ test('think blocks while a chaos vote is open then returns its inbox', async () 
   assert.equal(h.show.snapshot().applied.includes(vote.options[1]!.id), true);
 });
 
-test('story pace sleeps 2500ms per think, turbo 0', async () => {
+test('story pace pauses briefly per think, turbo 0', async () => {
   const h = harness();
   finishOpening(h);
   h.advance(60_000);
   await h.show.think('one');
   h.show.setPace('turbo');
   await h.show.think('two');
-  assert.deepEqual(h.slept, [2500, 0]);
+  assert.deepEqual(h.slept, [THINK_DELAY.story, 0]);
 });
 
 test('chaos vote never offers an already applied twist', () => {
@@ -202,7 +202,7 @@ test('the agent waits while Mission Control shows a twist, then gets on with it'
   h.advance(60_000);
   h.show.applyTwist('oil-shock');
   await h.show.think('prices tripled');
-  assert.deepEqual(h.slept, [SCREEN_MS.twist + SCREEN_MS.rest, 2500]);
+  assert.deepEqual(h.slept, [SCREEN_MS.twist + SCREEN_MS.rest, THINK_DELAY.story]);
 });
 
 test('pause freezes the vote clock and the agent until resume', async () => {

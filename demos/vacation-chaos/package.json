@@ -14,9 +14,11 @@
   "dependencies": {
     "@modelcontextprotocol/sdk": "1.32.2",
     "@typesafe-ai/sdk": "0.7.0",
+    "prettier": "3.9.10",
     "qrcode": "1.5.4",
     "react": "19.3.1",
     "react-dom": "19.3.1",
+    "shiki": "4.5.0",
     "zod": "4.6.5"
   },
   "devDependencies": {

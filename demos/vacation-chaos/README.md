@@ -11,11 +11,11 @@ real card, no real money.
 
 | URL | What it is |
 | --- | --- |
-| `/talk` | The talk: nine slides, arrow keys to move. The title slide shows the live QR and how many phones joined. The last arrow press opens Mission Control. |
+| `/talk` | The talk: eight slides, arrow keys to move. The title slide shows the live QR and how many phones joined. The last arrow press opens Mission Control. |
 | `/control` | Mission Control, the projector. The lobby, the agent's browser with a cursor, full-screen moments, votes and the end-of-run recap. |
-| `/vote` | The phone page the audience opens from the QR code. |
+| `/vote` | The phone page the audience opens from the QR code, with Tomer's links below the vote. |
 | `/site` | SunnyHop, the site the agent books on. Mission Control shows a read-only mirror of it. |
-| `/tour` | A code tour of the nine files that matter, read from the live source. |
+| `/tour` | A code tour read from the live source, highlighted and formatted on the server, ending on a Questions page with Tomer's links. |
 
 `/talk`, `/control` and `/tour` are one React and Tailwind app in `web/control/`, built by Vite into
 `dist/web` when you run `npm start`. The phone page and SunnyHop are server-rendered HTML.
@@ -105,7 +105,7 @@ so the dependency is pinned below 0.9. The AgentCore path does not use it.
 2. The crowd picks where Tomer goes, then his one rule. Each vote opens with a short heads-up.
 3. The agent types the destination and searches. **Oil shock** fires: fares triple.
 4. Crowd twist vote while the agent picks a flight. It books one.
-5. **Intern deploy**: the hotels page returns a 503 for 10 seconds.
+5. **Intern deploy**: the hotels page returns a 503 for 5 seconds.
 6. Crowd twist vote at the first hotel page. Hotel fine print: the goat clause, owner-written reviews and a
    prompt injection telling AI agents to book the Presidential Suite.
 7. Checkout: dark patterns, a human check only you can solve (tap the goats), and your approval if it is over
@@ -124,6 +124,8 @@ freezes the vote clock and the agent while you talk.
 - The agent's only tools besides the browser are the show tools: `think_aloud`, `check_inbox`,
   `ask_presenter`, `report_booking`, `finish`, and `jev_decide` when Jev is configured.
 - Storytelling pace slows the show by holding tool replies on the server, not by slowing the model.
+- The agent reads the site through the `page` field of each show tool reply: a text digest of the page it just
+  loaded. It skips screenshots and raw HTML, so it takes about two model turns per page and far fewer tokens.
 - Replay is a script and is labelled as one in the backstage panel.
 
 ## Who can change the show

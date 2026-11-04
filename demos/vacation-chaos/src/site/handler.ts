@@ -1,5 +1,6 @@
 import type { Show } from '../show/engine.js';
 import { city, cityFrom, findFlight, findHotel, flightPrice, hotelPrice, type Hotel } from './inventory.js';
+import { pageDigest } from './digest.js';
 import { outagePage, type PageContext } from './layout.js';
 import { INSURANCE, checkoutPage, donePage, flightDetail, flightsPage, hotelDetail, hotelsPage, messagePage, searchPage } from './pages.js';
 import { beforeRequest } from './rules.js';
@@ -19,8 +20,13 @@ export async function handleSite(show: Show, req: SiteRequest): Promise<SiteResp
   }
   const ctx: PageContext = { mission: show.mission, site: show.site, mirror: req.mirror, step: stepOf(req.path) };
   const res = route(show, req, ctx);
-  if (!req.mirror && req.method === 'GET' && res.status !== 303) show.record('page', { route: req.path, status: res.status });
+  if (!req.mirror && res.status !== 303) noteAgentPage(show, req, res);
   return res;
+}
+
+function noteAgentPage(show: Show, req: SiteRequest, res: SiteResponse): void {
+  show.sawPage(pageDigest(res.html));
+  if (req.method === 'GET') show.record('page', { route: req.path, status: res.status });
 }
 
 const STEPS: Array<[string, PageContext['step']]> = [
