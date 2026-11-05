@@ -1,22 +1,13 @@
 import type { ReactNode } from 'react';
-import { voteHost } from '../show';
 import { Accent, CodeBlock, Dim, Heading, Slide } from './Frame';
 
-export function TitleSlide({ audience }: { audience: number }) {
+export function TitleSlide() {
   return (
     <div className="absolute inset-0 flex animate-rise flex-col justify-between px-20 py-16">
       <div className="flex justify-between text-[15px]"><span className="font-semibold">Vacation Chaos</span><span className="text-zinc-500">Live on Amazon Bedrock AgentCore</span></div>
-      <div className="flex items-end justify-between gap-16">
-        <div className="flex max-w-[760px] flex-col gap-5">
-          <h1 className="text-[84px] font-semibold leading-[0.98] tracking-[-0.045em]">An AI agent books my vacation.</h1>
-          <p className="text-[40px] font-medium leading-tight tracking-[-0.03em] text-zinc-500">You make it chaotic.</p>
-        </div>
-        <div className="flex flex-col items-center gap-3 rounded-2xl border border-zinc-200 bg-white p-5">
-          <img src="/qr.svg" alt="QR code to join the vote" className="size-44" />
-          <span className="text-[15px] font-semibold">Scan to join</span>
-          <span className="font-mono text-[13px] text-zinc-500">{voteHost}</span>
-          <span className="text-sm text-zinc-500 tabular-nums">{audience} {audience === 1 ? 'phone' : 'phones'} in</span>
-        </div>
+      <div className="flex max-w-[760px] flex-col gap-5">
+        <h1 className="text-[84px] font-semibold leading-[0.98] tracking-[-0.045em]">An AI agent books my vacation.</h1>
+        <p className="text-[40px] font-medium leading-tight tracking-[-0.03em] text-zinc-500">You make it chaotic.</p>
       </div>
       <div className="flex justify-between text-base text-zinc-500"><span><b className="font-semibold text-zinc-950">Tomer Gal</b> · tomerwave.com</span><span>5 November 2026</span></div>
     </div>

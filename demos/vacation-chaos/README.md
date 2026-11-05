@@ -11,7 +11,7 @@ real card, no real money.
 
 | URL | What it is |
 | --- | --- |
-| `/talk` | The talk: eight slides, arrow keys to move. The title slide shows the live QR and how many phones joined. The last arrow press opens Mission Control. |
+| `/talk` | The talk: eight slides, arrow keys to move. The last arrow press opens Mission Control. |
 | `/control` | Mission Control, the projector. The lobby, the agent's browser with a cursor, full-screen moments, votes and the end-of-run recap. |
 | `/vote` | The phone page the audience opens from the QR code, with Tomer's links below the vote. |
 | `/site` | SunnyHop, the site the agent books on. Mission Control shows a read-only mirror of it. |
