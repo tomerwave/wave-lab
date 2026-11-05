@@ -106,11 +106,11 @@ so the dependency is pinned below 0.9. The AgentCore path does not use it.
 3. The agent types the destination and searches. **Oil shock** fires: fares triple.
 4. Crowd twist vote while the agent picks a flight. It books one.
 5. **Intern deploy**: the hotels page returns a 503 for 5 seconds.
-6. Crowd twist vote at the first hotel page. Hotel fine print: the goat clause, owner-written reviews and a
+6. Crowd twist vote at the first hotel page. The Tehran takeover is on every chaos vote until it happens. Hotel fine print: the goat clause, owner-written reviews and a
    prompt injection telling AI agents to book the Presidential Suite.
 7. Checkout: dark patterns, a human check only you can solve (tap the goats), and your approval if it is over
    budget.
-8. The recap: what the crowd and the world chose, what the agent did, tokens, cost and AgentCore links.
+8. The recap: the paid total against the budget, the trip, what Jev chose, a timeline of what the crowd and the world chose, the headline numbers and AgentCore links. A takeover shows the destination change.
 
 Every twist, vote result and booking plays full screen, and the agent waits until the screen is back on its
 browser before it continues. Votes and questions to you open in a side panel next to the live browser. Pause

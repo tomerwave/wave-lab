@@ -10,5 +10,3 @@ export const SOCIALS = [
   { label: 'Podcast', text: 'בינה ושגרה', href: 'https://open.spotify.com/show/2Ksp9fLLnPmwaRAcRaNmm6', icon: brandIcon('M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20Zm4.6 14.4a.62.62 0 0 1-.86.21c-2.35-1.44-5.3-1.76-8.8-.96a.62.62 0 1 1-.28-1.21c3.82-.88 7.1-.5 9.73 1.1.3.18.4.57.21.86Zm1.23-2.74a.78.78 0 0 1-1.07.26c-2.69-1.65-6.79-2.13-9.97-1.17a.78.78 0 1 1-.45-1.49c3.63-1.1 8.15-.56 11.24 1.33.37.23.48.71.25 1.07Zm.1-2.85C14.83 8.96 9.4 8.78 6.3 9.72a.94.94 0 1 1-.54-1.8c3.56-1.08 9.56-.87 13.33 1.37a.94.94 0 0 1-.96 1.61Z') },
   { label: 'Email', text: 'tomer@tomerwave.com', href: 'mailto:tomer@tomerwave.com', icon: '<g fill="none" stroke="currentColor" stroke-width="1.7"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="m3.5 6.5 8.5 6 8.5-6"/></g>' },
 ] as const;
-
-export const CONTACT = [...SOCIALS, { label: 'Email', text: 'tomer.wave@gmail.com', href: 'mailto:tomer.wave@gmail.com' }];

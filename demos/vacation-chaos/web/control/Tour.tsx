@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { CONTACT, LOGO } from '../../src/contact';
+import { LOGO, SOCIALS } from '../../src/contact';
 import type { SiteView, TourStop } from '../../src/tour';
 
 function useTour(): TourStop[] {
@@ -51,8 +51,8 @@ function Questions() {
       <img src={LOGO} alt="TomerWave" className="size-28 rounded-3xl" />
       <h2 className="text-[120px] font-semibold leading-none tracking-[-0.04em]">Questions?</h2>
       <p className="text-3xl text-zinc-400">Thank you.</p>
-      <div className="mt-8 grid grid-cols-4 gap-x-[4vw] gap-y-6 text-left">
-        {CONTACT.map((c) => (
+      <div className="mt-8 grid grid-cols-3 gap-x-[4vw] gap-y-6 text-left">
+        {SOCIALS.map((c) => (
           <a key={c.href} href={c.href} target="_blank" rel="noopener" className="flex flex-col gap-0.5 hover:text-white">
             <span className="text-base text-zinc-500">{c.label}</span>
             <span className="text-[clamp(15px,1.5vw,26px)] font-medium">{c.text}</span>
