@@ -25,6 +25,7 @@ const yaml: ReactNode = (
     {'    '}- Helping founders decide what to build{'\n'}
     {'      '}and get it into production. Still writing code.{'\n'}
     {'  '}<Dim>focus</Dim>: [R&amp;D leadership, Architecture, AI agents, Automation]{'\n'}
+    {'  '}<Dim>podcast</Dim>: בינה ושגרה{'\n'}
     {'  '}<Dim>before</Dim>:{'\n'}
     {'    '}- Tonkean: third developer, workflow automation{'\n'}
     {'    '}- LayerX: led engineers building browser security{'\n'}

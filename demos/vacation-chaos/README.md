@@ -13,7 +13,7 @@ real card, no real money.
 | --- | --- |
 | `/talk` | The talk: eight slides, arrow keys to move. The last arrow press opens Mission Control. |
 | `/control` | Mission Control, the projector. The lobby, the agent's browser with a cursor, full-screen moments, votes and the end-of-run recap. |
-| `/vote` | The phone page the audience opens from the QR code, with Tomer's links below the vote. |
+| `/vote` | The phone page the audience opens from the QR code, with icons linking to Tomer's socials below the vote. |
 | `/site` | SunnyHop, the site the agent books on. Mission Control shows a read-only mirror of it. |
 | `/tour` | A code tour read from the live source, highlighted and formatted on the server, ending on a Questions page with Tomer's links. |
 
@@ -151,7 +151,7 @@ cloud session is refused (HTTP 410). The presenter API needs the key. Phones can
 
 - State is in memory, and there is one show at a time. Restarting the server resets everything.
 - The checkout is simulated, with no idempotency or durable ledger. A real booking flow needs both.
-- Phones poll `/api/state` every second. A quick tunnel is fine for a conference room. A large room should use
+- Phones poll `/api/state` every second, and a phone counts as joined on its first poll, so link previews and scripts do not. A quick tunnel is fine for a conference room. A large room should use
   a named tunnel or a hosted server.
 
 ## Credits

@@ -1,4 +1,4 @@
-import { CONTACT, LOGO } from './contact.js';
+import { LOGO, SOCIALS } from './contact.js';
 
 const head = (title: string, css: string) => `<!doctype html><html lang="en"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1"><title>${title}</title>
@@ -16,8 +16,8 @@ export function controlPage(meta: ControlMeta): string {
 }
 
 function contactCard(): string {
-  const rows = CONTACT.map((c) => `<a href="${c.href}" target="_blank" rel="noopener"><span>${c.label}</span><b>${c.text}</b></a>`).join('');
-  return `<section class="card by"><div class="brand"><img src="${LOGO}" alt="TomerWave"><div><b>Tomer Gal</b><span>TomerWave</span></div></div><div class="links">${rows}</div></section>`;
+  const icons = SOCIALS.map((s) => `<a href="${s.href}" target="_blank" rel="noopener" aria-label="${s.label}" title="${s.label}"><svg viewBox="0 0 24 24" aria-hidden="true">${s.icon}</svg></a>`).join('');
+  return `<section class="card by"><img src="${LOGO}" alt="TomerWave"><b>Tomer Gal</b><nav class="socials">${icons}</nav></section>`;
 }
 
 export function votePage(): string {

@@ -1,10 +1,14 @@
 export const LOGO = '/static/img/tomerwave-icon.svg';
 
-export const CONTACT = [
-  { label: 'Website', text: 'tomerwave.com', href: 'https://tomerwave.com' },
-  { label: 'X', text: '@TomerWave', href: 'https://x.com/TomerWave' },
-  { label: 'GitHub', text: 'tomerwave', href: 'https://github.com/tomerwave' },
-  { label: 'LinkedIn', text: 'tomergal14', href: 'https://www.linkedin.com/in/tomergal14' },
-  { label: 'Email', text: 'tomer@tomerwave.com', href: 'mailto:tomer@tomerwave.com' },
-  { label: 'Email', text: 'tomer.wave@gmail.com', href: 'mailto:tomer.wave@gmail.com' },
+const brandIcon = (path: string) => `<path fill="currentColor" d="${path}"/>`;
+
+export const SOCIALS = [
+  { label: 'Website', text: 'tomerwave.com', href: 'https://tomerwave.com', icon: '<g fill="none" stroke="currentColor" stroke-width="1.7"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3c2.5 2.5 3.8 5.5 3.8 9s-1.3 6.5-3.8 9c-2.5-2.5-3.8-5.5-3.8-9S9.5 5.5 12 3z"/></g>' },
+  { label: 'X', text: '@TomerWave', href: 'https://x.com/TomerWave', icon: brandIcon('M17.5 3h3.2l-7 8 8.2 10.9h-6.4l-5-6.6-5.8 6.6H1.5l7.5-8.6L1 3h6.6l4.5 6 5.4-6Zm-1.1 16.9h1.8L7.7 4.9H5.8l10.6 15Z') },
+  { label: 'GitHub', text: 'tomerwave', href: 'https://github.com/tomerwave', icon: brandIcon('M12 .5a11.5 11.5 0 0 0-3.64 22.42c.58.1.79-.25.79-.56v-2c-3.2.7-3.88-1.37-3.88-1.37-.53-1.34-1.3-1.7-1.3-1.7-1.05-.72.08-.71.08-.71 1.17.08 1.79 1.2 1.79 1.2 1.03 1.77 2.7 1.26 3.36.96.1-.75.4-1.26.73-1.55-2.56-.29-5.26-1.28-5.26-5.7 0-1.26.45-2.29 1.2-3.1-.13-.29-.52-1.46.1-3.05 0 0 .97-.31 3.2 1.18a11 11 0 0 1 5.82 0c2.22-1.49 3.19-1.18 3.19-1.18.62 1.59.23 2.76.11 3.05.75.81 1.2 1.84 1.2 3.1 0 4.43-2.71 5.4-5.28 5.69.41.36.78 1.06.78 2.14v3.17c0 .31.21.67.8.56A11.5 11.5 0 0 0 12 .5Z') },
+  { label: 'LinkedIn', text: 'tomergal14', href: 'https://www.linkedin.com/in/tomergal14', icon: brandIcon('M20.4 3H3.6A.6.6 0 0 0 3 3.6v16.8a.6.6 0 0 0 .6.6h16.8a.6.6 0 0 0 .6-.6V3.6a.6.6 0 0 0-.6-.6ZM8.3 18.3H5.6V9.7h2.7v8.6ZM7 8.5a1.6 1.6 0 1 1 0-3.1 1.6 1.6 0 0 1 0 3.1Zm11.3 9.8h-2.7v-4.2c0-1-.02-2.3-1.4-2.3s-1.6 1.1-1.6 2.2v4.3H9.9V9.7h2.6v1.2h.03c.36-.68 1.24-1.4 2.55-1.4 2.73 0 3.23 1.8 3.23 4.1v4.7Z') },
+  { label: 'Podcast', text: 'בינה ושגרה', href: 'https://open.spotify.com/show/2Ksp9fLLnPmwaRAcRaNmm6', icon: brandIcon('M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20Zm4.6 14.4a.62.62 0 0 1-.86.21c-2.35-1.44-5.3-1.76-8.8-.96a.62.62 0 1 1-.28-1.21c3.82-.88 7.1-.5 9.73 1.1.3.18.4.57.21.86Zm1.23-2.74a.78.78 0 0 1-1.07.26c-2.69-1.65-6.79-2.13-9.97-1.17a.78.78 0 1 1-.45-1.49c3.63-1.1 8.15-.56 11.24 1.33.37.23.48.71.25 1.07Zm.1-2.85C14.83 8.96 9.4 8.78 6.3 9.72a.94.94 0 1 1-.54-1.8c3.56-1.08 9.56-.87 13.33 1.37a.94.94 0 0 1-.96 1.61Z') },
+  { label: 'Email', text: 'tomer@tomerwave.com', href: 'mailto:tomer@tomerwave.com', icon: '<g fill="none" stroke="currentColor" stroke-width="1.7"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="m3.5 6.5 8.5 6 8.5-6"/></g>' },
 ] as const;
+
+export const CONTACT = [...SOCIALS, { label: 'Email', text: 'tomer.wave@gmail.com', href: 'mailto:tomer.wave@gmail.com' }];
