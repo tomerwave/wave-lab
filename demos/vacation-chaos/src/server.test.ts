@@ -2,7 +2,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import type { TourStop } from './tour.js';
 import type { AddressInfo } from 'node:net';
-import { CONTACT } from './contact.js';
+import { SOCIALS } from './contact.js';
 import { Show } from './show/engine.js';
 import { createShowServer } from './server.js';
 
@@ -63,13 +63,25 @@ test('site routes render and redirect through the server', async (t) => {
   assert.equal(res.headers.get('location'), '/site/hotels');
 });
 
+test('only a phone that runs the page counts as joined', async (t) => {
+  const { show, base, close } = await boot();
+  t.after(close);
+  const page = await fetch(`${base}/vote`);
+  const cookie = (page.headers.get('set-cookie') ?? '').split(';')[0]!;
+  await fetch(`${base}/api/state`);
+  assert.equal(show.snapshot().audience, 0);
+  await fetch(`${base}/api/state`, { headers: { cookie } });
+  await fetch(`${base}/api/state`, { headers: { cookie } });
+  assert.equal(show.snapshot().audience, 1);
+});
+
 test('vote page hands out a voter cookie', async (t) => {
   const { base, close } = await boot();
   t.after(close);
   const page = await fetch(`${base}/vote`);
   assert.match(page.headers.get('set-cookie') ?? '', /^vc_voter=/);
   const html = await page.text();
-  for (const { href } of CONTACT) assert.ok(html.includes(`href="${href}"`), href);
+  for (const { href } of SOCIALS) assert.ok(html.includes(`href="${href}"`), href);
 });
 
 async function agentSearch(base: string, token: string): Promise<string> {
