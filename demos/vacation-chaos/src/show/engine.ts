@@ -1,6 +1,6 @@
 import { randomUUID } from 'node:crypto';
 import { freshRecap, track, type Recap, type RunInfo } from './recap.js';
-import { CHAOS_POOL, DESTINATIONS, RULES, TWISTS } from './twists.js';
+import { ALWAYS_OFFERED, CHAOS_POOL, DESTINATIONS, RULES, TWISTS } from './twists.js';
 import { SCREEN_MS, START_BUDGET, freshMission, freshSite, type Ask, type AskKind, type Mission, type Pace, type RunMode, type SiteMode, type VoteOption } from './types.js';
 
 export const VOTE_MS = 60_000;
@@ -336,7 +336,8 @@ export class Show {
   private pickChaos(): string[] {
     const flightBooked = this.state.booked.flight !== null;
     const pool = CHAOS_POOL.filter((id) => !this.state.applied.includes(id) && !(flightBooked && TWISTS[id]!.flightOnly));
-    const picked: string[] = [];
+    const always = pool.indexOf(ALWAYS_OFFERED);
+    const picked = always >= 0 ? pool.splice(always, 1) : [];
     while (picked.length < 3 && pool.length) picked.push(pool.splice(Math.floor(this.random() * pool.length), 1)[0]!);
     return picked;
   }

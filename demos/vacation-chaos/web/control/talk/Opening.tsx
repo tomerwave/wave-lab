@@ -67,7 +67,7 @@ export function PlanSlide() {
           </div>
         ))}
         <div className="flex min-h-[300px] flex-col gap-3 rounded-2xl bg-zinc-900 p-6 text-zinc-50">
-          <span className="text-[15px] text-zinc-400 tabular-nums">04</span><span className="text-[26px] font-semibold tracking-[-0.02em]">It holds the line</span><span className="text-lg leading-relaxed text-zinc-300">Stays in budget, refuses bad deals, and asks a human when it should.</span>
+          <span className="text-[15px] text-zinc-400 tabular-nums">04</span><span className="text-[26px] font-semibold tracking-[-0.02em]">Will it hold the line?</span><span className="text-lg leading-relaxed text-zinc-300">Stays in budget, refuses bad deals, and asks a human when it should.</span>
         </div>
       </div>
       <p className="text-lg text-zinc-500">All prices fictional. All payments simulated. All suffering real.</p>

@@ -233,3 +233,14 @@ test('the recap remembers the whole run: crowd choices, world twists, Jev picks 
   h.show.reset('local');
   assert.deepEqual(h.show.snapshot().recap.choices, []);
 });
+
+test('the Tehran takeover is on every chaos vote until it happens', () => {
+  for (const random of [0, 0.5, 0.99]) {
+    const show = new Show({ random: () => random, sleep: () => Promise.resolve() });
+    assert.ok(show.openVote('chaos')?.options.some((o) => o.id === 'takeover'));
+    assert.equal(show.openVote('chaos')?.options.length, 3);
+    show.closeVote();
+    show.applyTwist('takeover');
+    assert.ok(!show.openVote('chaos')?.options.some((o) => o.id === 'takeover'));
+  }
+});

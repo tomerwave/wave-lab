@@ -121,6 +121,7 @@ const list: Twist[] = [
 ];
 
 export const TWISTS: Record<string, Twist> = Object.fromEntries(list.map((t) => [t.id, t]));
+export const ALWAYS_OFFERED = 'takeover';
 export const CHAOS_POOL = list.filter((t) => t.kind === 'vote').map((t) => t.id);
 
 export const DESTINATIONS: VoteOption[] = [
