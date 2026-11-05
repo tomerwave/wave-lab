@@ -1,11 +1,10 @@
 import { useEffect, useState, type ReactNode } from 'react';
-import { useShow } from '../show';
 import { AgentSlide, HarnessSlide, OptionsSlide } from './Concepts';
 import { Stage } from './Frame';
 import { PlanSlide, TitleSlide, WhoSlide } from './Opening';
 import { ConfigSlide, RuntimeSlide } from './Platform';
 
-const SLIDES: Array<(props: { audience: number }) => ReactNode> = [TitleSlide, WhoSlide, PlanSlide, AgentSlide, HarnessSlide, OptionsSlide, ConfigSlide, RuntimeSlide];
+const SLIDES: Array<() => ReactNode> = [TitleSlide, WhoSlide, PlanSlide, AgentSlide, HarnessSlide, OptionsSlide, ConfigSlide, RuntimeSlide];
 const FORWARD = new Set(['ArrowRight', 'ArrowDown', 'PageDown', ' ']);
 const BACK = new Set(['ArrowLeft', 'ArrowUp', 'PageUp']);
 
@@ -31,7 +30,6 @@ function useSlideIndex(): number {
 
 export function Talk() {
   const index = useSlideIndex();
-  const audience = useShow()?.snap.audience ?? 0;
   const Current = SLIDES[index]!;
-  return <Stage><Current key={index} audience={audience} /></Stage>;
+  return <Stage><Current key={index} /></Stage>;
 }
